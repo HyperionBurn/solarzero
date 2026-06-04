@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SolarZero - Solar Assessment Proposal</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: #1e293b;
+      width: 794px;
+      margin: 0 auto;
+      padding: 48px 48px 32px;
+      background: #fff;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 3px solid #0d9488;
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+    .header h1 { font-size: 28px; font-weight: 700; color: #0d9488; }
+    .header .subtitle { font-size: 14px; color: #64748b; margin-top: 4px; }
+    .header .badge {
+      background: #f0fdfa;
+      color: #0d9488;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .address { font-size: 18px; font-weight: 600; margin-bottom: 24px; }
+    .section { margin-bottom: 32px; }
+    .section h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0d9488;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td { padding: 10px 16px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+    th { background: #f8fafc; color: #64748b; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+    td { color: #334155; }
+    td.value { font-weight: 700; color: #0f172a; text-align: right; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .metric {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .metric-label { font-size: 11px; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
+    .metric-value { font-size: 20px; font-weight: 700; color: #0f172a; }
+    .metric-unit { font-size: 12px; color: #64748b; }
+    .footer {
+      margin-top: 48px;
+      padding-top: 16px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .note {
+      background: #f0fdfa;
+      border-left: 3px solid #0d9488;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #0d9488;
+      border-radius: 4px;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>SolarZero</h1>
+      <div class="subtitle">Solar Assessment Report</div>
+    </div>
+    <div class="badge">Confidential</div>
+  </div>
+
+  <div class="address">{{BUILDING_ADDRESS}}</div>
+
+  <div class="section">
+    <h2>Building Overview</h2>
+    <div class="grid">
+      <div class="metric">
+        <div class="metric-label">Building Type</div>
+        <div class="metric-value">{{BUILDING_TYPE}}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Roof Area</div>
+        <div class="metric-value">{{ROOF_AREA}} <span class="metric-unit">m²</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Solar Assessment Results</h2>
+    <div class="grid">
+      <div class="metric">
+        <div class="metric-label">System Size</div>
+        <div class="metric-value">{{SYSTEM_SIZE}} <span class="metric-unit">kWp</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Solar Panels</div>
+        <div class="metric-value">{{PANEL_COUNT}}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Annual Production</div>
+        <div class="metric-value">{{ANNUAL_PRODUCTION}} <span class="metric-unit">kWh</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Source GHI</div>
+        <div class="metric-value">{{GHI_ANNUAL}} <span class="metric-unit">kWh/m²/yr</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Total Cost</div>
+        <div class="metric-value">AED {{TOTAL_COST}}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Annual Savings</div>
+        <div class="metric-value">AED {{ANNUAL_SAVINGS}}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Payback Period</div>
+        <div class="metric-value">{{PAYBACK}} <span class="metric-unit">years</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">NPV (25 years)</div>
+        <div class="metric-value">AED {{NPV_25YR}}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">CO₂ Offset</div>
+        <div class="metric-value">{{CO2_OFFSET}} <span class="metric-unit">tons/yr</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Data Source</div>
+        <div class="metric-value">{{DATA_SOURCE}}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>DEWA Tariff:</strong> Based on DEWA slab tariff at AED {{DEWA_TARIFF}}/kWh.
+    Actual savings may vary based on consumption patterns and tariff structure.
+    This is an estimate based on satellite irradiance data and industry-standard performance models.
+  </div>
+
+  <div class="footer">
+    <span>Powered by SolarZero</span>
+    <span>Confidential &mdash; Generated {{DATE}}</span>
+  </div>
+</body>
+</html>
