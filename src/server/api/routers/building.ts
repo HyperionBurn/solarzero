@@ -239,7 +239,13 @@ export const buildingRouter = router({
         },
         take: input.limit,
         orderBy: { createdAt: "desc" },
-        include: {
+        select: {
+          id: true,
+          address: true,
+          lat: true,
+          lng: true,
+          buildingType: true,
+          roofAreaM2: true,
           assessment: {
             select: {
               id: true,
