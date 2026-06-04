@@ -1,14 +1,89 @@
-import { Worker } from 'bullmq';
-import { redis } from './redis';
+import { Worker, Job } from "bullmq";
+import { redis } from "./redis";
+import { db } from "./db";
+import { generateProposalPdf, type ProposalData } from "./pdf/generate";
+import { uploadProposalPdf } from "./storage/r2";
 
-const pdfWorker = new Worker('pdf-generation', async (job) => {
-  // PDF generation handled by Railway worker in production
-  return { status: 'placeholder' };
-}, { connection: redis });
+interface PdfJobData extends ProposalData {}
 
-const assessmentWorker = new Worker('assessment', async (job) => {
-  return { status: 'placeholder' };
-}, { connection: redis });
+const pdfWorker = new Worker(
+  "pdf-generation",
+  async (job: Job<PdfJobData>) => {
+    const data = job.data;
 
-pdfWorker.on('ready', () => {});
-assessmentWorker.on('ready', () => {});
+    try {
+      // Update proposal status to processing
+      await db.proposal.update({
+        where: { id: data.proposalId },
+        data: { status: "processing" },
+      });
+
+      // Generate PDF
+      const pdfBuffer = await generateProposalPdf(data);
+
+      // Upload to R2
+      const pdfUrl = await uploadProposalPdf(data.proposalId, pdfBuffer);
+
+      // Update proposal with PDF URL and status
+      await db.proposal.update({
+        where: { id: data.proposalId },
+        data: {
+          status: "ready",
+          pdfUrl,
+        },
+      });
+
+      return { success: true, pdfUrl };
+    } catch (error) {
+      console.error(`PDF generation failed for proposal ${data.proposalId}:`, error);
+
+      // Update proposal status to failed
+      await db.proposal.update({
+        where: { id: data.proposalId },
+        data: { status: "failed" },
+      });
+
+      throw error;
+    }
+  },
+  {
+    connection: redis,
+    concurrency: 2,
+    limiter: {
+      max: 5,
+      duration: 60_000,
+    },
+  }
+);
+
+const assessmentWorker = new Worker(
+  "assessment",
+  async (job: Job) => {
+    // Assessment is currently done inline, this worker is a placeholder
+    // for future async assessment processing
+    return { status: "completed" };
+  },
+  {
+    connection: redis,
+    concurrency: 1,
+  }
+);
+
+// Event handlers
+pdfWorker.on("ready", () => {
+  console.log("PDF worker ready");
+});
+
+pdfWorker.on("failed", (job, err) => {
+  console.error(`PDF job ${job?.id} failed:`, err.message);
+});
+
+assessmentWorker.on("ready", () => {
+  console.log("Assessment worker ready");
+});
+
+// Graceful shutdown
+process.on("SIGTERM", async () => {
+  await pdfWorker.close();
+  await assessmentWorker.close();
+});
