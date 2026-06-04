@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { db } from "@/lib/db";
+import { cleanEnvValue } from "../env";
 
 /**
  * Generate a verification token for email verification.
@@ -70,6 +71,6 @@ export async function verifyEmailToken(
  * Get the verification URL for a given token.
  */
 export function getVerificationUrl(token: string): string {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const baseUrl = cleanEnvValue(process.env.NEXT_PUBLIC_APP_URL) || "http://localhost:3000";
   return `${baseUrl}/api/auth/verify?token=${token}`;
 }

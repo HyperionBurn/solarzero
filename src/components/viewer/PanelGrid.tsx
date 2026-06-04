@@ -31,6 +31,10 @@ const tempObject = new THREE.Object3D();
  */
 export function PanelGrid({ panelCount, roofWidth, roofDepth, tiltDeg }: PanelGridProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
+  const panelGeometry = useMemo(
+    () => new THREE.BoxGeometry(PANEL_WIDTH, PANEL_THICKNESS, PANEL_HEIGHT),
+    [],
+  );
 
   const positions = useMemo(() => {
     const result: { position: [number, number, number]; rotation: [number, number, number] }[] = [];
@@ -80,11 +84,6 @@ export function PanelGrid({ panelCount, roofWidth, roofDepth, tiltDeg }: PanelGr
   });
 
   if (positions.length === 0) return null;
-
-  const panelGeometry = useMemo(
-    () => new THREE.BoxGeometry(PANEL_WIDTH, PANEL_THICKNESS, PANEL_HEIGHT),
-    []
-  );
 
   return (
     <instancedMesh

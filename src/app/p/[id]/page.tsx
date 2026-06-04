@@ -7,9 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 
 export const dynamic = "force-dynamic";
 
-interface Props { params: Promise<{ id: string }>; }
-
-export default async function ProposalPage({ params }: Props) {
+export default async function ProposalPage({ params }: PageProps<"/p/[id]">) {
   const { id } = await params;
 
   const proposal = await db.proposal.findUnique({

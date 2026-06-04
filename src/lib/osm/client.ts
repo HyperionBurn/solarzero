@@ -1,5 +1,8 @@
+import { cleanEnvValue } from "../env";
+
 const OVERPASS_URL =
-  process.env.OVERPASS_API_URL || "https://overpass-api.de/api/interpreter";
+  cleanEnvValue(process.env.OVERPASS_API_URL) ||
+  "https://overpass-api.de/api/interpreter";
 
 const OSM_TIMEOUT_MS = 25_000;
 

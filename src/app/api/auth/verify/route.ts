@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyEmailToken } from "@/lib/email/verify";
 import { logger } from "@/lib/logger";
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, context: RouteContext<"/api/auth/verify">) {
+  void context;
   const token = req.nextUrl.searchParams.get("token");
 
   if (!token) {

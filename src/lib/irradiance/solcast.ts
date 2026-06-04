@@ -1,4 +1,5 @@
 import { logger } from "@/lib/logger";
+import { optionalEnvValue } from "../env";
 
 const SOLCAST_API_URL = "https://api.solcast.com.au";
 
@@ -20,7 +21,7 @@ export async function getSolcastGHI(
   lat: number,
   lng: number,
 ): Promise<number | null> {
-  const apiKey = process.env.SOLCAST_API_KEY;
+  const apiKey = optionalEnvValue(process.env.SOLCAST_API_KEY);
   if (!apiKey) {
     logger.warn("SOLCAST_API_KEY not set, skipping Solcast");
     return null;

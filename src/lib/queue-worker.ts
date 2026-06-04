@@ -5,7 +5,7 @@ import { generateProposalPdf, type ProposalData } from "./pdf/generate";
 import { uploadProposalPdf } from "./storage/r2";
 import { logger } from "./logger";
 
-interface PdfJobData extends ProposalData {}
+type PdfJobData = ProposalData;
 
 const pdfWorker = new Worker(
   "pdf-generation",
@@ -59,7 +59,7 @@ const pdfWorker = new Worker(
 
 const assessmentWorker = new Worker(
   "assessment",
-  async (job: Job) => {
+  async () => {
     // Assessment is currently done inline, this worker is a placeholder
     // for future async assessment processing
     return { status: "completed" };

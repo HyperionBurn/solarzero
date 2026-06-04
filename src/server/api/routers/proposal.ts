@@ -1,13 +1,13 @@
 import * as z from "zod";
 import { publicProcedure, protectedProcedure, router } from "../trpc";
 import { db } from "@/lib/db";
-import { pdfQueue } from "@/lib/queue";
 import { logger } from "@/lib/logger";
+import { uploadProposalPdf } from "@/lib/storage/r2";
 
 export const proposalRouter = router({
   /**
    * Generate a proposal PDF for a building's assessment.
-   * Enqueues a BullMQ job and returns the proposal record.
+   * Generates the PDF inline so production does not depend on BullMQ/Redis.
    */
   generate: protectedProcedure
     .input(
@@ -52,15 +52,18 @@ export const proposalRouter = router({
         },
       });
 
-      // Enqueue PDF generation job
       try {
-        await pdfQueue.add("generate-pdf", {
+        await db.proposal.update({
+          where: { id: proposal.id },
+          data: { status: "processing" },
+        });
+
+        const { generateProposalPdf } = await import("@/lib/pdf/generate");
+        const pdfBuffer = await generateProposalPdf({
           proposalId: proposal.id,
-          buildingId,
-          assessmentId: building.assessment.id,
           buildingAddress: building.address,
-          buildingType: building.buildingType,
-          roofAreaM2: building.roofAreaM2,
+          buildingType: building.buildingType ?? "commercial",
+          roofAreaM2: building.roofAreaM2 ?? 0,
           systemSizeKwp: building.assessment.systemSizeKwp,
           panelCount: building.assessment.panelCount,
           annualProduction: building.assessment.annualProduction,
@@ -73,11 +76,22 @@ export const proposalRouter = router({
           dataSource: building.assessment.dataSource,
           ghiAnnual: building.assessment.ghiAnnual,
         });
+        const pdfUrl = await uploadProposalPdf(proposal.id, pdfBuffer);
+        return await db.proposal.update({
+          where: { id: proposal.id },
+          data: {
+            status: "ready",
+            pdfUrl,
+          },
+        });
       } catch (err) {
-        logger.warn({ err }, "Failed to enqueue PDF job, will generate inline");
+        logger.error({ err, proposalId: proposal.id }, "Failed to generate proposal PDF");
+        await db.proposal.update({
+          where: { id: proposal.id },
+          data: { status: "failed" },
+        });
+        throw new Error("Failed to generate proposal PDF. Please try again.");
       }
-
-      return proposal;
     }),
 
   /**

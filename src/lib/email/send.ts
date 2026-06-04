@@ -1,14 +1,20 @@
 import nodemailer from "nodemailer";
 import { escapeHtml } from "@/lib/utils";
 import { logger } from "@/lib/logger";
+import { cleanEnvValue } from "../env";
+
+const defaultFrom = cleanEnvValue(process.env.EMAIL_FROM) || "SolarZero <noreply@solarzero.app>";
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST ?? "smtp.resend.com",
-  port: Number(process.env.SMTP_PORT ?? 587),
-  secure: process.env.SMTP_SECURE === "true",
+  host: cleanEnvValue(process.env.SMTP_HOST) || "smtp.resend.com",
+  port: Number(cleanEnvValue(process.env.SMTP_PORT) || 587),
+  secure: cleanEnvValue(process.env.SMTP_SECURE) === "true",
   auth: {
-    user: process.env.SMTP_USER ?? "resend",
-    pass: process.env.SMTP_PASSWORD ?? process.env.RESEND_API_KEY ?? "",
+    user: cleanEnvValue(process.env.SMTP_USER) || "resend",
+    pass:
+      cleanEnvValue(process.env.SMTP_PASSWORD) ||
+      cleanEnvValue(process.env.RESEND_API_KEY) ||
+      "",
   },
 });
 
@@ -25,7 +31,7 @@ interface SendEmailOptions {
 export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
   try {
     await transporter.sendMail({
-      from: options.from ?? process.env.EMAIL_FROM ?? "SolarZero <noreply@solarzero.app>",
+      from: options.from ?? defaultFrom,
       to: options.to,
       subject: options.subject,
       html: options.html,

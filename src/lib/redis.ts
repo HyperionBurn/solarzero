@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { cleanEnvValue, optionalEnvValue } from "./env";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let redisInstance: any = null;
 
@@ -19,8 +20,16 @@ function createMockRedis() {
 function getRedis() {
   if (redisInstance) return redisInstance;
 
-  const url = process.env.UPSTASH_REDIS_URL;
+  const url = optionalEnvValue(process.env.UPSTASH_REDIS_URL);
   if (!url) {
+    redisInstance = createMockRedis();
+    return redisInstance;
+  }
+
+  // Vercel serverless often cannot sustain the TCP socket used by ioredis.
+  // In production we prefer the fast no-op fallback, which keeps auth and the
+  // rest of the app responsive even if Redis is unavailable.
+  if (cleanEnvValue(process.env.VERCEL) === "1") {
     redisInstance = createMockRedis();
     return redisInstance;
   }
@@ -29,10 +38,12 @@ function getRedis() {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Redis = require("ioredis");
     redisInstance = new Redis(url, {
-      password: process.env.UPSTASH_REDIS_TOKEN,
+      password: optionalEnvValue(process.env.UPSTASH_REDIS_TOKEN),
       maxRetriesPerRequest: null,
       enableOfflineQueue: false,
-      retryStrategy: (times: number) => (times > 2 ? null : Math.min(times * 200, 1000)),
+      connectTimeout: 2_000,
+      retryStrategy: (times: number) =>
+        times > 2 ? null : Math.min(times * 200, 1000),
       lazyConnect: true,
     });
     redisInstance.on("error", (err: unknown) => {

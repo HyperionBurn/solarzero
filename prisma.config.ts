@@ -2,6 +2,9 @@
 // npm install --save-dev prisma dotenv
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
+import { normalizeEnvKeys } from "./src/lib/env";
+
+normalizeEnvKeys("DATABASE_URL", "DIRECT_URL");
 
 export default defineConfig({
   schema: "prisma/schema.prisma",

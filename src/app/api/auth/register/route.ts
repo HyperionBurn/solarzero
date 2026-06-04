@@ -10,7 +10,16 @@ export async function POST(req: NextRequest) {
   try {
     // Rate limiting
     const ip = getClientIp(req.headers);
-    const { success, limit, remaining } = await registerRateLimit.limit(ip);
+    let success = true;
+    let remaining = 0;
+
+    try {
+      const rateLimit = await registerRateLimit.limit(ip);
+      success = rateLimit.success;
+      remaining = rateLimit.remaining;
+    } catch (err) {
+      logger.warn({ err }, "Registration rate limit unavailable, allowing request");
+    }
 
     if (!success) {
       return NextResponse.json(
