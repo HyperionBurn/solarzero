@@ -6,6 +6,7 @@ normalizeEnvKeys("NEXTAUTH_URL", "NEXTAUTH_SECRET");
 
 export const { auth, handlers } = NextAuth({
   ...authConfig,
+  trustHost: true,
   secret: cleanEnvValue(process.env.NEXTAUTH_SECRET) || undefined,
   callbacks: {
     async jwt({ token, user }) {

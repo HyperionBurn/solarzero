@@ -36,7 +36,10 @@ export function SearchBar({ onSelect }: SearchBarProps) {
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, []);
 
   async function search(query: string) {

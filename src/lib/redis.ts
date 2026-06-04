@@ -1,69 +1,57 @@
-import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
-import { optionalEnvValue } from "./env";
+import { cleanEnvValue } from "./env";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let redisInstance: any = null;
-let redisUsesMock = true;
+let _isMock = false;
 
 function createMockRedis() {
-  redisUsesMock = true;
   return {
     get: () => Promise.resolve(null),
     set: () => Promise.resolve("OK"),
     setex: () => Promise.resolve("OK"),
     del: () => Promise.resolve(0),
     ping: () => Promise.resolve("PONG"),
+    on: () => {},
+    quit: () => Promise.resolve("OK"),
+    disconnect: () => {},
+    status: "end",
   };
-}
-
-function buildRestUrl(): string | undefined {
-  const configuredRestUrl = optionalEnvValue(process.env.UPSTASH_REDIS_REST_URL);
-  if (configuredRestUrl) return configuredRestUrl;
-
-  const legacyUrl = optionalEnvValue(process.env.UPSTASH_REDIS_URL);
-  if (!legacyUrl) return undefined;
-
-  try {
-    const parsed = new URL(legacyUrl);
-    return `${parsed.protocol === "rediss:" ? "https:" : "http:"}//${parsed.hostname}`;
-  } catch (err) {
-    logger.warn({ err }, "Invalid Upstash Redis URL");
-    return undefined;
-  }
-}
-
-function buildToken(): string | undefined {
-  return (
-    optionalEnvValue(process.env.UPSTASH_REDIS_REST_TOKEN) ??
-    optionalEnvValue(process.env.UPSTASH_REDIS_TOKEN)
-  );
 }
 
 function getRedis() {
   if (redisInstance) return redisInstance;
 
-  const url = buildRestUrl();
-  const token = buildToken();
-  if (!url || !token) {
+  const url = cleanEnvValue(process.env.UPSTASH_REDIS_URL);
+  const token = cleanEnvValue(process.env.UPSTASH_REDIS_TOKEN);
+
+  if (!url) {
     redisInstance = createMockRedis();
+    _isMock = true;
     return redisInstance;
   }
 
   try {
-    redisInstance = new Redis({
-      url,
-      token,
-      enableTelemetry: false,
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Redis = require("ioredis");
+    redisInstance = new Redis(url, {
+      password: token || undefined,
+      maxRetriesPerRequest: null,
+      enableOfflineQueue: false,
+      retryStrategy: (times: number) => (times > 2 ? null : Math.min(times * 200, 1000)),
+      lazyConnect: true,
     });
-    redisUsesMock = false;
-  } catch (err) {
-    logger.warn({ err }, "Failed to initialize Upstash Redis, using mock");
+    redisInstance.on("error", (err: unknown) => {
+      logger.warn({ err }, "Redis connection error");
+    });
+  } catch {
+    logger.warn("Failed to initialize Redis, using mock");
     redisInstance = createMockRedis();
+    _isMock = true;
   }
 
   return redisInstance;
 }
 
 export const redis = getRedis();
-export const redisIsMock = redisUsesMock;
+export const redisIsMock = _isMock;

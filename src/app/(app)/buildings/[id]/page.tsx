@@ -41,6 +41,12 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
   const [exportLoading, setExportLoading] = useState(false);
   const [sensitivityVars, setSensitivityVars] = useState<SensitivityVariables>(PRESETS.EXPECTED);
   const [shareLoading, setShareLoading] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const { data: building, isLoading: buildingLoading, error: buildingError } = api.building.getById.useQuery({ id });
   const { data: assessment, refetch: refetchAssessment, isLoading: assessmentQueryLoading } = api.assessment.getByBuilding.useQuery({ buildingId: id });
@@ -95,10 +101,10 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
       const result = await generateProposal.mutateAsync({ buildingId: id });
       if (result?.id) {
         await navigator.clipboard.writeText(`${window.location.origin}/p/${result.id}`);
-        alert("Proposal link copied to clipboard!");
+        showToast("Proposal link copied to clipboard!", "success");
       }
-    } catch (err) {
-      alert("Failed to create share link. Please try again.");
+    } catch {
+      showToast("Failed to create share link. Please try again.", "error");
     } finally {
       setShareLoading(false);
     }
@@ -135,6 +141,18 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="space-y-6 p-6">
+      {toast && (
+        <div
+          className={`fixed right-4 top-4 z-50 rounded-lg px-4 py-3 text-sm font-medium shadow-lg transition-all ${
+            toast.type === "success"
+              ? "bg-green-600 text-white"
+              : "bg-red-600 text-white"
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
