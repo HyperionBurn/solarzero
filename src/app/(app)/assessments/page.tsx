@@ -34,8 +34,8 @@ export default function AssessmentsPage() {
       ) : !assessments || assessments.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-            <div className="rounded-full bg-muted p-4">
-              <Clock className="h-8 w-8 text-muted-foreground" />
+            <div className="rounded-full bg-teal-100 p-4 dark:bg-teal-900">
+              <Clock className="h-8 w-8 text-teal-600 dark:text-teal-400" />
             </div>
             <div>
               <CardTitle className="mb-1 text-lg">No assessments yet</CardTitle>
@@ -44,7 +44,7 @@ export default function AssessmentsPage() {
               </CardDescription>
             </div>
             <Link href="/map">
-              <Button>
+              <Button className="mt-2">
                 <MapPin className="mr-1.5 h-4 w-4" />
                 Go to Map
               </Button>
