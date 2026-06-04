@@ -1,56 +1,64 @@
+import { Redis } from "@upstash/redis";
 import { logger } from "./logger";
-import { cleanEnvValue, optionalEnvValue } from "./env";
+import { optionalEnvValue } from "./env";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let redisInstance: any = null;
+let redisUsesMock = true;
 
 function createMockRedis() {
+  redisUsesMock = true;
   return {
     get: () => Promise.resolve(null),
     set: () => Promise.resolve("OK"),
     setex: () => Promise.resolve("OK"),
     del: () => Promise.resolve(0),
     ping: () => Promise.resolve("PONG"),
-    on: () => {},
-    quit: () => Promise.resolve("OK"),
-    disconnect: () => {},
-    status: "end",
   };
+}
+
+function buildRestUrl(): string | undefined {
+  const configuredRestUrl = optionalEnvValue(process.env.UPSTASH_REDIS_REST_URL);
+  if (configuredRestUrl) return configuredRestUrl;
+
+  const legacyUrl = optionalEnvValue(process.env.UPSTASH_REDIS_URL);
+  if (!legacyUrl) return undefined;
+
+  try {
+    const parsed = new URL(legacyUrl);
+    return `${parsed.protocol === "rediss:" ? "https:" : "http:"}//${parsed.hostname}`;
+  } catch (err) {
+    logger.warn({ err }, "Invalid Upstash Redis URL");
+    return undefined;
+  }
+}
+
+function buildToken(): string | undefined {
+  return (
+    optionalEnvValue(process.env.UPSTASH_REDIS_REST_TOKEN) ??
+    optionalEnvValue(process.env.UPSTASH_REDIS_TOKEN)
+  );
 }
 
 function getRedis() {
   if (redisInstance) return redisInstance;
 
-  const url = optionalEnvValue(process.env.UPSTASH_REDIS_URL);
-  if (!url) {
-    redisInstance = createMockRedis();
-    return redisInstance;
-  }
-
-  // Vercel serverless often cannot sustain the TCP socket used by ioredis.
-  // In production we prefer the fast no-op fallback, which keeps auth and the
-  // rest of the app responsive even if Redis is unavailable.
-  if (cleanEnvValue(process.env.VERCEL) === "1") {
+  const url = buildRestUrl();
+  const token = buildToken();
+  if (!url || !token) {
     redisInstance = createMockRedis();
     return redisInstance;
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Redis = require("ioredis");
-    redisInstance = new Redis(url, {
-      password: optionalEnvValue(process.env.UPSTASH_REDIS_TOKEN),
-      maxRetriesPerRequest: null,
-      enableOfflineQueue: false,
-      connectTimeout: 2_000,
-      retryStrategy: (times: number) =>
-        times > 2 ? null : Math.min(times * 200, 1000),
-      lazyConnect: true,
+    redisInstance = new Redis({
+      url,
+      token,
+      enableTelemetry: false,
     });
-    redisInstance.on("error", (err: unknown) => {
-      logger.warn({ err }, "Redis connection error");
-    });
-  } catch {
-    logger.warn("Failed to initialize Redis, using mock");
+    redisUsesMock = false;
+  } catch (err) {
+    logger.warn({ err }, "Failed to initialize Upstash Redis, using mock");
     redisInstance = createMockRedis();
   }
 
@@ -58,3 +66,4 @@ function getRedis() {
 }
 
 export const redis = getRedis();
+export const redisIsMock = redisUsesMock;

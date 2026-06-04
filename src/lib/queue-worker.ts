@@ -1,5 +1,5 @@
 import { Worker, Job } from "bullmq";
-import { redis } from "./redis";
+import { queueRedis } from "./queue-redis";
 import { db } from "./db";
 import { generateProposalPdf, type ProposalData } from "./pdf/generate";
 import { uploadProposalPdf } from "./storage/r2";
@@ -48,7 +48,7 @@ const pdfWorker = new Worker(
     }
   },
   {
-    connection: redis,
+    connection: queueRedis,
     concurrency: 2,
     limiter: {
       max: 5,
@@ -65,7 +65,7 @@ const assessmentWorker = new Worker(
     return { status: "completed" };
   },
   {
-    connection: redis,
+    connection: queueRedis,
     concurrency: 1,
   }
 );
