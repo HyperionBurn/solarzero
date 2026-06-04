@@ -6,6 +6,38 @@ const TTL_OSM = 7 * 24 * 60 * 60; // 7 days
 const TTL_SOLCAST = 30 * 24 * 60 * 60; // 30 days
 const TTL_ASSESSMENT = 24 * 60 * 60; // 24 hours
 
+function decodeJsonCache<T>(value: unknown): T | null {
+  if (value === null || value === undefined) return null;
+
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value) as T;
+    } catch (err) {
+      logger.warn({ err }, "Failed to parse cached JSON value");
+      return null;
+    }
+  }
+
+  if (typeof value === "object") {
+    return value as T;
+  }
+
+  return null;
+}
+
+function decodeNumberCache(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
 // ─── OSM Cache ────────────────────────────────────────────
 
 export async function getCachedOSM(
@@ -15,8 +47,7 @@ export async function getCachedOSM(
   try {
     const key = `osm:${lat}:${lng}`;
     const cached = await redis.get(key);
-    if (!cached) return null;
-    return JSON.parse(cached) as OSMResponse;
+    return decodeJsonCache<OSMResponse>(cached);
   } catch (err) {
     logger.warn({ err }, "Redis getCachedOSM error");
     return null;
@@ -45,8 +76,7 @@ export async function getCachedSolcast(
   try {
     const key = `solcast:${lat}:${lng}`;
     const cached = await redis.get(key);
-    if (!cached) return null;
-    return parseFloat(cached);
+    return decodeNumberCache(cached);
   } catch (err) {
     logger.warn({ err }, "Redis getCachedSolcast error");
     return null;
@@ -74,8 +104,7 @@ export async function getCachedAssessment(
   try {
     const key = `assessment:${buildingId}`;
     const cached = await redis.get(key);
-    if (!cached) return null;
-    return JSON.parse(cached) as Record<string, unknown>;
+    return decodeJsonCache<Record<string, unknown>>(cached);
   } catch (err) {
     logger.warn({ err }, "Redis getCachedAssessment error");
     return null;

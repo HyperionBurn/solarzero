@@ -2,7 +2,10 @@ import { queryBuildingsAround } from "@/lib/osm/client";
 import { parseOSMBuilding } from "@/lib/osm/parser";
 import { getSolcastGHI } from "@/lib/irradiance/solcast";
 import { getUAEIrradiance } from "@/lib/irradiance/uae-model";
-import { getTemperatureDerating } from "@/lib/irradiance/temperature";
+import {
+  getTemperatureDerating,
+  type TemperatureData,
+} from "@/lib/irradiance/temperature";
 import { calculateCosts } from "@/lib/engine/cost";
 import {
   getCachedOSM,
@@ -35,6 +38,28 @@ export interface AssessmentResult {
   temperatureDataSource?: string;
 }
 
+export interface AssessmentBuildingContext {
+  roofAreaM2?: number | null;
+  buildingType?: string | null;
+  osmId?: string | null;
+  osmType?: string | null;
+  heightMeters?: number | null;
+}
+
+interface SolarResource {
+  ghiAnnual: number;
+  dataSource: string;
+  temperatureData: TemperatureData | null;
+}
+
+interface BuildingFootprint {
+  roofAreaM2: number;
+  buildingType: string;
+  osmId: string;
+  osmType: string;
+  heightMeters: number | null;
+}
+
 /**
  * Run the 5-step Hybrid Assessment Engine for a building location.
  *
@@ -45,6 +70,7 @@ export interface AssessmentResult {
  *
  * Algorithm (Section 5.3):
  * STEP 1: OSM Overpass API → building footprint polygon → roofAreaM2, buildingType
+ *         or use the stored building record when available
  * STEP 2: Solcast (primary) / Custom model (fallback) → GHI annual kWh/m²/yr
  * STEP 3: USABLE_AREA = roofAreaM2 × 0.85 × 0.82
  *         PANEL_COUNT = floor(USABLE_AREA / 2.58 × 0.70)
@@ -57,7 +83,61 @@ export async function runAssessment(
   lng: number,
   radius: number = 100,
   dewaTariffAed: number = 0.32,
+  buildingContext?: AssessmentBuildingContext,
 ): Promise<AssessmentResult> {
+  const buildingFootprint = await resolveBuildingFootprint(lat, lng, radius, buildingContext);
+  const solarResource = await getSolarResource(lat, lng);
+
+  return buildAssessmentResult({
+    lat,
+    lng,
+    buildingFootprint,
+    solarResource,
+    dewaTariffAed,
+    assessmentSource: buildingContext?.roofAreaM2 && buildingContext.roofAreaM2 > 0 ? "BUILDING_RECORD" : "OSM_QUERY",
+  });
+}
+
+/**
+ * Run assessment and attempt to cache the result.
+ */
+export async function runAssessmentWithCache(
+  lat: number,
+  lng: number,
+  buildingId: string,
+  radius: number = 100,
+  dewaTariffAed: number = 0.32,
+  buildingContext?: AssessmentBuildingContext,
+): Promise<AssessmentResult> {
+  const cached = await getCachedAssessment(buildingId);
+  if (cached) {
+    return cached as unknown as AssessmentResult;
+  }
+
+  const result = await runAssessment(lat, lng, radius, dewaTariffAed, buildingContext);
+
+  // Cache the result
+  await setCachedAssessment(buildingId, result as unknown as Record<string, unknown>);
+
+  return result;
+}
+
+async function resolveBuildingFootprint(
+  lat: number,
+  lng: number,
+  radius: number,
+  buildingContext?: AssessmentBuildingContext,
+): Promise<BuildingFootprint> {
+  if (buildingContext?.roofAreaM2 && buildingContext.roofAreaM2 > 0) {
+    return {
+      roofAreaM2: buildingContext.roofAreaM2,
+      buildingType: buildingContext.buildingType ?? "unknown",
+      osmId: buildingContext.osmId ?? "building/unknown",
+      osmType: buildingContext.osmType ?? "building",
+      heightMeters: buildingContext.heightMeters ?? null,
+    };
+  }
+
   // === STEP 1: Get building footprint from OSM (cached) ===
   let osmData;
   const cachedOSM = await getCachedOSM(lat, lng);
@@ -75,6 +155,10 @@ export async function runAssessment(
     );
   }
 
+  return parsedBuilding;
+}
+
+async function getSolarResource(lat: number, lng: number): Promise<SolarResource> {
   // === STEP 2: Get GHI irradiance (Solcast → cache → UAE model fallback) ===
   let ghiAnnual: number;
   let dataSource: string;
@@ -98,17 +182,43 @@ export async function runAssessment(
   // === STEP 2.5: Get temperature derating for dynamic PR ===
   const temperatureData = await getTemperatureDerating(lat, lng);
 
-  // === STEPS 3-5: System sizing and cost ===
-  const costs = calculateCosts(parsedBuilding.roofAreaM2, ghiAnnual, dewaTariffAed, temperatureData);
-
-  const result: AssessmentResult = {
-    roofAreaM2: Math.round(parsedBuilding.roofAreaM2 * 100) / 100,
-    buildingType: parsedBuilding.buildingType,
-    osmId: parsedBuilding.osmId,
-    osmType: parsedBuilding.osmType,
-    heightMeters: parsedBuilding.heightMeters,
-    ghiAnnual: Math.round(ghiAnnual),
+  return {
+    ghiAnnual,
     dataSource,
+    temperatureData,
+  };
+}
+
+function buildAssessmentResult({
+  lat,
+  lng,
+  buildingFootprint,
+  solarResource,
+  dewaTariffAed,
+  assessmentSource,
+}: {
+  lat: number;
+  lng: number;
+  buildingFootprint: BuildingFootprint;
+  solarResource: SolarResource;
+  dewaTariffAed: number;
+  assessmentSource: "OSM_QUERY" | "BUILDING_RECORD";
+}): AssessmentResult {
+  const costs = calculateCosts(
+    buildingFootprint.roofAreaM2,
+    solarResource.ghiAnnual,
+    dewaTariffAed,
+    solarResource.temperatureData,
+  );
+
+  return {
+    roofAreaM2: Math.round(buildingFootprint.roofAreaM2 * 100) / 100,
+    buildingType: buildingFootprint.buildingType,
+    osmId: buildingFootprint.osmId,
+    osmType: buildingFootprint.osmType,
+    heightMeters: buildingFootprint.heightMeters,
+    ghiAnnual: Math.round(solarResource.ghiAnnual),
+    dataSource: solarResource.dataSource,
     systemSizeKwp: Math.round(costs.systemSizeKwp * 100) / 100,
     panelCount: costs.panelCount,
     annualProductionKwh: Math.round(costs.annualProductionKwh),
@@ -118,40 +228,18 @@ export async function runAssessment(
     npv25yrAed: costs.npv25yrAed,
     co2OffsetTons: costs.co2OffsetTons,
     dewaTariffAed,
-    temperatureDerating: temperatureData?.deratingFactor,
-    temperatureDataSource: temperatureData?.dataSource,
+    temperatureDerating: solarResource.temperatureData?.deratingFactor,
+    temperatureDataSource: solarResource.temperatureData?.dataSource,
     rawResponseJson: {
       lat,
       lng,
-      buildingType: parsedBuilding.buildingType,
-      osmId: parsedBuilding.osmId,
-      dataSource,
+      buildingType: buildingFootprint.buildingType,
+      osmId: buildingFootprint.osmId,
+      osmType: buildingFootprint.osmType,
+      roofAreaM2: Math.round(buildingFootprint.roofAreaM2 * 100) / 100,
+      dataSource: solarResource.dataSource,
+      assessmentSource,
       computedAt: new Date().toISOString(),
     },
   };
-
-  return result;
-}
-
-/**
- * Run assessment and attempt to cache the result.
- */
-export async function runAssessmentWithCache(
-  lat: number,
-  lng: number,
-  buildingId: string,
-  radius: number = 100,
-  dewaTariffAed: number = 0.32,
-): Promise<AssessmentResult> {
-  const cached = await getCachedAssessment(buildingId);
-  if (cached) {
-    return cached as unknown as AssessmentResult;
-  }
-
-  const result = await runAssessment(lat, lng, radius, dewaTariffAed);
-
-  // Cache the result
-  await setCachedAssessment(buildingId, result as unknown as Record<string, unknown>);
-
-  return result;
 }
