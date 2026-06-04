@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -19,10 +21,27 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const result = await signIn("credentials", { email, password, redirect: false });
-      if (result?.error) { setError("Invalid email or password"); }
-      else { window.location.href = "/map"; }
-    } catch { setError("Login failed. Please try again."); }
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl: "/map",
+      });
+
+      if (!result?.ok) {
+        setError(
+          result?.error === "CredentialsSignin"
+            ? "Invalid email or password"
+            : "Login failed. Please try again."
+        );
+        return;
+      }
+
+      router.replace(result.url ?? "/map");
+      router.refresh();
+    } catch {
+      setError("Login failed. Please try again.");
+    }
     finally { setLoading(false); }
   }
 

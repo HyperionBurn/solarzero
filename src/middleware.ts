@@ -9,6 +9,9 @@ export function middleware(req: NextRequest) {
   }
 
   const token =
+    req.cookies.get("authjs.session-token")?.value ??
+    req.cookies.get("__Secure-authjs.session-token")?.value ??
+    req.cookies.get("__Host-authjs.session-token")?.value ??
     req.cookies.get("next-auth.session-token")?.value ??
     req.cookies.get("__Secure-next-auth.session-token")?.value;
 

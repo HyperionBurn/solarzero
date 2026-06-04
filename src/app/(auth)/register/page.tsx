@@ -25,9 +25,14 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, email, password }) });
       if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Registration failed"); }
       // Auto-login after registration
-      const result = await signIn("credentials", { email, password, redirect: false });
-      if (result?.error) { router.push("/login"); }
-      else { window.location.href = "/map"; }
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl: "/map",
+      });
+      if (!result?.ok) { router.push("/login"); }
+      else { router.replace(result.url ?? "/map"); router.refresh(); }
     } catch (err) { setError(err instanceof Error ? err.message : "An error occurred"); }
     finally { setLoading(false); }
   }
