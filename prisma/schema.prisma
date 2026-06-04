@@ -1,13 +1,73 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Building {
+  id           String       @id @default(cuid())
+  osmId        String?
+  osmType      String?
+  address      String
+  lat          Float
+  lng          Float
+  roofAreaM2   Float?
+  buildingType String?
+  heightMeters Float?
+  hasSolar     Boolean      @default(false)
+  assessment   Assessment?
+  proposals    Proposal[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([lat, lng])
+  @@index([buildingType])
+  @@index([osmId])
+}
+
+model Assessment {
+  id               String     @id @default(cuid())
+  buildingId       String     @unique
+  building         Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  dataSource       String     @default("HYBRID")
+  ghiAnnual        Float
+  systemSizeKwp    Float
+  panelCount       Int
+  annualProduction Float
+  totalCostAed     Float
+  annualSavingsAed Float
+  paybackYears     Float
+  npv25yrAed       Float
+  co2OffsetTons    Float
+  dewaTariffAed    Float      @default(0.32)
+  rawResponseJson  Json?
+  proposals        Proposal[]
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("user")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Proposal {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  buildingId   String
+  building     Building   @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  pdfUrl       String?
+  status       String     @default("pending")
+  generatedBy  String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
