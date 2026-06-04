@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { publicProcedure, router } from "../trpc";
+import { publicProcedure, protectedProcedure, router } from "../trpc";
 import { db } from "@/lib/db";
 import { queryBuildingsAround } from "@/lib/osm/client";
 import type { OSMResponse } from "@/lib/osm/client";
@@ -30,7 +30,7 @@ export const buildingRouter = router({
   /**
    * Query OSM for a building at the given coordinates and persist it.
    */
-  createFromOSM: publicProcedure
+  createFromOSM: protectedProcedure
     .input(
       z.object({
         lat: z.number(),
@@ -71,7 +71,7 @@ export const buildingRouter = router({
       const building = await db.building.create({
         data: {
           osmId: parsed.osmId,
-          osmType: "way",
+          osmType: parsed.osmType,
           address,
           lat,
           lng,
@@ -155,7 +155,7 @@ export const buildingRouter = router({
    * Discover buildings from OSM for an area and persist them.
    * Returns all buildings found (both newly created and existing).
    */
-  discoverArea: publicProcedure
+  discoverArea: protectedProcedure
     .input(
       z.object({
         lat: z.number(),
@@ -177,33 +177,43 @@ export const buildingRouter = router({
 
       if (parsed.length === 0) return [];
 
+      // Batch fetch existing buildings by osmId to avoid N+1
+      const osmIds = parsed.map((b) => b.osmId);
+      const existingBuildings = await db.building.findMany({
+        where: { osmId: { in: osmIds } },
+      });
+      const existingByOsmId = new Map(existingBuildings.map((b) => [b.osmId, b]));
+
       const results = [];
+      const toCreate: typeof parsed = [];
       for (const b of parsed) {
-        const existing = await db.building.findFirst({
-          where: { osmId: b.osmId },
-        });
-        if (!existing) {
-          const typeLabel = b.buildingType && b.buildingType !== "unknown" && b.buildingType !== "roof"
-            ? b.buildingType.charAt(0).toUpperCase() + b.buildingType.slice(1)
-            : "Commercial";
-          const emirate = getEmirateConfig(b.lat, b.lng);
-          const address = `${typeLabel} Building in ${getDubaiAreaName(b.lat, b.lng)}, ${emirate.name}`;
-          const created = await db.building.create({
-            data: {
-              osmId: b.osmId,
-              osmType: b.osmType,
-              address,
-              lat: b.lat,
-              lng: b.lng,
-              roofAreaM2: b.roofAreaM2,
-              buildingType: b.buildingType,
-              heightMeters: b.heightMeters ?? null,
-            },
-          });
-          results.push(created);
-        } else {
+        const existing = existingByOsmId.get(b.osmId);
+        if (existing) {
           results.push(existing);
+        } else {
+          toCreate.push(b);
         }
+      }
+
+      for (const b of toCreate) {
+        const typeLabel = b.buildingType && b.buildingType !== "unknown" && b.buildingType !== "roof"
+          ? b.buildingType.charAt(0).toUpperCase() + b.buildingType.slice(1)
+          : "Commercial";
+        const emirate = getEmirateConfig(b.lat, b.lng);
+        const address = `${typeLabel} Building in ${getDubaiAreaName(b.lat, b.lng)}, ${emirate.name}`;
+        const created = await db.building.create({
+          data: {
+            osmId: b.osmId,
+            osmType: b.osmType,
+            address,
+            lat: b.lat,
+            lng: b.lng,
+            roofAreaM2: b.roofAreaM2,
+            buildingType: b.buildingType,
+            heightMeters: b.heightMeters ?? null,
+          },
+        });
+        results.push(created);
       }
       return results;
     }),

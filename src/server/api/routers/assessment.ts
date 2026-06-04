@@ -1,17 +1,18 @@
 import * as z from "zod";
-import { publicProcedure, router } from "../trpc";
+import { publicProcedure, protectedProcedure, router } from "../trpc";
 import { db } from "@/lib/db";
 import { runAssessment } from "@/lib/engine/assessment";
 import {
   getCachedAssessment,
   setCachedAssessment,
 } from "@/lib/engine/cache";
+import type { Prisma } from "@prisma/client";
 
 export const assessmentRouter = router({
   /**
    * Run the hybrid assessment engine for an existing building.
    */
-  run: publicProcedure
+  run: protectedProcedure
     .input(
       z.object({
         buildingId: z.string(),
@@ -66,7 +67,7 @@ export const assessmentRouter = router({
           npv25yrAed: result.npv25yrAed,
           co2OffsetTons: result.co2OffsetTons,
           dewaTariffAed: result.dewaTariffAed,
-          rawResponseJson: result.rawResponseJson as Record<string, string>,
+          rawResponseJson: result.rawResponseJson as Prisma.InputJsonValue,
         },
         update: {
           dataSource: result.dataSource,
@@ -80,7 +81,7 @@ export const assessmentRouter = router({
           npv25yrAed: result.npv25yrAed,
           co2OffsetTons: result.co2OffsetTons,
           dewaTariffAed: result.dewaTariffAed,
-          rawResponseJson: result.rawResponseJson as Record<string, string>,
+          rawResponseJson: result.rawResponseJson as Prisma.InputJsonValue,
           updatedAt: new Date(),
         },
       });

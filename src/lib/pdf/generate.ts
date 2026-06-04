@@ -1,11 +1,12 @@
 import PdfPrinter from "pdfmake";
+import path from "path";
+
+const fontsDir = path.join(__dirname, "fonts");
 
 const fonts = {
   Roboto: {
-    normal: Buffer.from(
-      "dummy", // placeholder — in production, use actual font files
-      "base64"
-    ),
+    normal: path.join(fontsDir, "Roboto-Regular.ttf"),
+    bold: path.join(fontsDir, "Roboto-Medium.ttf"),
   },
 };
 

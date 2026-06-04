@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { generateVerificationToken, getVerificationUrl } from "@/lib/email/verify";
 import { sendVerificationEmail } from "@/lib/email/send";
 import { registerRateLimit, getClientIp } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   try {
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
       await sendVerificationEmail(email, name, verificationUrl);
     } catch (err) {
       // Don't fail registration if email sending fails
-      console.warn("Failed to send verification email:", err);
+      logger.warn({ err }, "Failed to send verification email");
     }
 
     return NextResponse.json(

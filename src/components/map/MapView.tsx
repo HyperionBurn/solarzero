@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { api } from "@/trpc/react";
+import { escapeHtml } from "@/lib/utils";
 
 interface MapViewProps {
   center?: [number, number];
@@ -95,8 +96,8 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
       el.addEventListener("mouseleave", () => { el.style.width = "12px"; el.style.height = "12px"; el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.3)"; });
 
       const html = `<div style="font-family:system-ui,sans-serif;padding:4px">
-        <p style="font-weight:600;font-size:13px;margin:0 0 4px;color:#0f172a">${building.address ?? "Building"}</p>
-        <p style="font-size:12px;color:#64748b;margin:0 0 4px">Type: <span style="color:${color};font-weight:600">${building.buildingType ?? "Unknown"}</span>${building.roofAreaM2 ? ` &middot; ${Math.round(building.roofAreaM2)} m²` : ""}</p>
+        <p style="font-weight:600;font-size:13px;margin:0 0 4px;color:#0f172a">${escapeHtml(building.address ?? "Building")}</p>
+        <p style="font-size:12px;color:#64748b;margin:0 0 4px">Type: <span style="color:${color};font-weight:600">${escapeHtml(building.buildingType ?? "Unknown")}</span>${building.roofAreaM2 ? ` &middot; ${Math.round(building.roofAreaM2)} m²` : ""}</p>
         ${building.assessment ? `<p style="font-size:12px;color:#0d9488;margin:0 0 8px">Assessed: ${building.assessment.systemSizeKwp.toFixed(1)} kWp &middot; ${building.assessment.panelCount} panels</p>` : ""}
         <a href="/buildings/${building.id}" style="display:inline-block;padding:6px 14px;background:#0d9488;color:white;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">Assess this Building</a>
       </div>`;

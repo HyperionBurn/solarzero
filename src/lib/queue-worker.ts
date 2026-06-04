@@ -3,6 +3,7 @@ import { redis } from "./redis";
 import { db } from "./db";
 import { generateProposalPdf, type ProposalData } from "./pdf/generate";
 import { uploadProposalPdf } from "./storage/r2";
+import { logger } from "./logger";
 
 interface PdfJobData extends ProposalData {}
 
@@ -35,7 +36,7 @@ const pdfWorker = new Worker(
 
       return { success: true, pdfUrl };
     } catch (error) {
-      console.error(`PDF generation failed for proposal ${data.proposalId}:`, error);
+      logger.error({ err: error, proposalId: data.proposalId }, "PDF generation failed");
 
       // Update proposal status to failed
       await db.proposal.update({
@@ -71,15 +72,15 @@ const assessmentWorker = new Worker(
 
 // Event handlers
 pdfWorker.on("ready", () => {
-  console.log("PDF worker ready");
+  logger.info("PDF worker ready");
 });
 
 pdfWorker.on("failed", (job, err) => {
-  console.error(`PDF job ${job?.id} failed:`, err.message);
+  logger.error({ jobId: job?.id, err }, "PDF job failed");
 });
 
 assessmentWorker.on("ready", () => {
-  console.log("Assessment worker ready");
+  logger.info("Assessment worker ready");
 });
 
 // Graceful shutdown

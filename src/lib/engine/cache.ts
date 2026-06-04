@@ -1,4 +1,5 @@
 import { redis } from "@/lib/redis";
+import { logger } from "@/lib/logger";
 import type { OSMResponse } from "@/lib/osm/client";
 
 const TTL_OSM = 7 * 24 * 60 * 60; // 7 days
@@ -17,7 +18,7 @@ export async function getCachedOSM(
     if (!cached) return null;
     return JSON.parse(cached) as OSMResponse;
   } catch (err) {
-    console.warn("Redis getCachedOSM error:", err);
+    logger.warn({ err }, "Redis getCachedOSM error");
     return null;
   }
 }
@@ -31,7 +32,7 @@ export async function setCachedOSM(
     const key = `osm:${lat}:${lng}`;
     await redis.setex(key, TTL_OSM, JSON.stringify(data));
   } catch (err) {
-    console.warn("Redis setCachedOSM error:", err);
+    logger.warn({ err }, "Redis setCachedOSM error");
   }
 }
 
@@ -47,7 +48,7 @@ export async function getCachedSolcast(
     if (!cached) return null;
     return parseFloat(cached);
   } catch (err) {
-    console.warn("Redis getCachedSolcast error:", err);
+    logger.warn({ err }, "Redis getCachedSolcast error");
     return null;
   }
 }
@@ -61,7 +62,7 @@ export async function setCachedSolcast(
     const key = `solcast:${lat}:${lng}`;
     await redis.setex(key, TTL_SOLCAST, data.toString());
   } catch (err) {
-    console.warn("Redis setCachedSolcast error:", err);
+    logger.warn({ err }, "Redis setCachedSolcast error");
   }
 }
 
@@ -76,7 +77,7 @@ export async function getCachedAssessment(
     if (!cached) return null;
     return JSON.parse(cached) as Record<string, unknown>;
   } catch (err) {
-    console.warn("Redis getCachedAssessment error:", err);
+    logger.warn({ err }, "Redis getCachedAssessment error");
     return null;
   }
 }
@@ -89,6 +90,6 @@ export async function setCachedAssessment(
     const key = `assessment:${buildingId}`;
     await redis.setex(key, TTL_ASSESSMENT, JSON.stringify(data));
   } catch (err) {
-    console.warn("Redis setCachedAssessment error:", err);
+    logger.warn({ err }, "Redis setCachedAssessment error");
   }
 }

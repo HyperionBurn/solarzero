@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyEmailToken } from "@/lib/email/verify";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token");
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
       new URL("/login?verified=true", req.nextUrl)
     );
   } catch (error) {
-    console.error("Email verification error:", error);
+    logger.error({ err: error }, "Email verification error");
     return NextResponse.redirect(
       new URL("/login?error=verification_failed", req.nextUrl)
     );

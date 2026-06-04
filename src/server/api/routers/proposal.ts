@@ -1,14 +1,15 @@
 import * as z from "zod";
-import { publicProcedure, router } from "../trpc";
+import { publicProcedure, protectedProcedure, router } from "../trpc";
 import { db } from "@/lib/db";
 import { pdfQueue } from "@/lib/queue";
+import { logger } from "@/lib/logger";
 
 export const proposalRouter = router({
   /**
    * Generate a proposal PDF for a building's assessment.
    * Enqueues a BullMQ job and returns the proposal record.
    */
-  generate: publicProcedure
+  generate: protectedProcedure
     .input(
       z.object({
         buildingId: z.string(),
@@ -73,7 +74,7 @@ export const proposalRouter = router({
           ghiAnnual: building.assessment.ghiAnnual,
         });
       } catch (err) {
-        console.warn("Failed to enqueue PDF job, will generate inline:", err);
+        logger.warn({ err }, "Failed to enqueue PDF job, will generate inline");
       }
 
       return proposal;

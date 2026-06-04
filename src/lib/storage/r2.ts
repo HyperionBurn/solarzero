@@ -1,66 +1,38 @@
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-} from "@aws-sdk/client-s3";
+import { createClient } from "@supabase/supabase-js";
 
-const r2 = new S3Client({
-  region: "auto",
-  endpoint: process.env.CLOUDFLARE_R2_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID ?? "",
-    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY ?? "",
-  },
-});
+// Use service role key for server-side uploads (bypasses RLS)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+);
 
-const BUCKET = process.env.CLOUDFLARE_R2_BUCKET ?? "solarzero-proposals";
-const PUBLIC_URL = process.env.CLOUDFLARE_R2_PUBLIC_URL ?? "";
+const BUCKET = "proposals";
 
-/**
- * Upload a PDF buffer to Cloudflare R2.
- * Returns the public URL of the uploaded file.
- */
 export async function uploadProposalPdf(
   proposalId: string,
-  pdfBuffer: Buffer
+  pdfBuffer: Buffer,
 ): Promise<string> {
-  const key = `proposals/${proposalId}.pdf`;
+  const key = `${proposalId}.pdf`;
 
-  await r2.send(
-    new PutObjectCommand({
-      Bucket: BUCKET,
-      Key: key,
-      Body: pdfBuffer,
-      ContentType: "application/pdf",
-      CacheControl: "public, max-age=31536000",
-    })
-  );
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(key, pdfBuffer, {
+      contentType: "application/pdf",
+      upsert: true,
+    });
 
-  // Return public URL if configured, otherwise return the key
-  if (PUBLIC_URL) {
-    return `${PUBLIC_URL}/${key}`;
+  if (error) {
+    throw new Error(`Failed to upload PDF: ${error.message}`);
   }
 
-  return key;
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(key);
+  return data.publicUrl;
 }
 
-/**
- * Get a signed URL for downloading a proposal PDF.
- */
-export async function getProposalDownloadUrl(proposalId: string): Promise<string> {
-  const key = `proposals/${proposalId}.pdf`;
-
-  const command = new GetObjectCommand({
-    Bucket: BUCKET,
-    Key: key,
-  });
-
-  // For R2, we return the public URL if available
-  if (PUBLIC_URL) {
-    return `${PUBLIC_URL}/${key}`;
-  }
-
-  // Fallback: generate a presigned URL (requires @aws-sdk/s3-request-presigner)
-  // For now, return the key — caller should handle presigning
-  return key;
+export async function getProposalDownloadUrl(
+  proposalId: string,
+): Promise<string> {
+  const key = `${proposalId}.pdf`;
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(key);
+  return data.publicUrl;
 }

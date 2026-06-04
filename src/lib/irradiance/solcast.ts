@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 const SOLCAST_API_URL = "https://api.solcast.com.au";
 
 const SOLCAST_TIMEOUT_MS = 15_000;
@@ -20,7 +22,7 @@ export async function getSolcastGHI(
 ): Promise<number | null> {
   const apiKey = process.env.SOLCAST_API_KEY;
   if (!apiKey) {
-    console.warn("SOLCAST_API_KEY not set, skipping Solcast");
+    logger.warn("SOLCAST_API_KEY not set, skipping Solcast");
     return null;
   }
 
@@ -43,9 +45,7 @@ export async function getSolcastGHI(
     }
 
     if (!response.ok) {
-      console.warn(
-        `Solcast API returned ${response.status}: ${response.statusText}`,
-      );
+      logger.warn({ status: response.status, statusText: response.statusText }, "Solcast API error");
       return null;
     }
 
@@ -53,7 +53,7 @@ export async function getSolcastGHI(
     const estimates = data.estimated_actuals;
 
     if (!estimates || estimates.length === 0) {
-      console.warn("Solcast returned no estimated_actuals");
+      logger.warn("Solcast returned no estimated_actuals");
       return null;
     }
 
@@ -94,7 +94,7 @@ export async function getSolcastGHI(
 
     return totalKwhPerM2;
   } catch (err) {
-    console.warn("Solcast API error:", err);
+    logger.warn({ err }, "Solcast API error");
     return null;
   }
 }

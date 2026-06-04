@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { generateVerificationToken, getVerificationUrl } from "@/lib/email/verify";
 import { sendVerificationEmail } from "@/lib/email/send";
+import { logger } from "@/lib/logger";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -55,7 +56,7 @@ export async function registerAction(_prevState: unknown, formData: FormData) {
       const verificationUrl = getVerificationUrl(token);
       await sendVerificationEmail(validated.email, validated.name, verificationUrl);
     } catch {
-      console.warn("Failed to send verification email during registration");
+      logger.warn("Failed to send verification email during registration");
     }
     // Auth auto-login handled client-side by RegisterPage via signIn from next-auth/react
     return { error: null, success: true };

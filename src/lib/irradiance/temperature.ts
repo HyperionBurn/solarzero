@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 export interface TemperatureData {
   avgTempC: number;
   cellTempC: number;
@@ -45,7 +47,7 @@ export async function getTemperatureDerating(
     }
 
     if (!response.ok) {
-      console.error(`Open-Meteo API error: ${response.status}`);
+      logger.error({ status: response.status }, "Open-Meteo API error");
       return null;
     }
 
@@ -54,7 +56,7 @@ export async function getTemperatureDerating(
     const times = data.daily.time;
 
     if (!dailyTemps || dailyTemps.length === 0) {
-      console.error("Open-Meteo returned empty temperature data");
+      logger.error("Open-Meteo returned empty temperature data");
       return null;
     }
 
@@ -82,10 +84,7 @@ export async function getTemperatureDerating(
       monthlyAvgTempC: monthlyAvgTempC.map((t) => Math.round(t * 100) / 100),
     };
   } catch (error) {
-    console.error(
-      "Failed to fetch temperature data from Open-Meteo:",
-      error,
-    );
+    logger.error({ err: error }, "Failed to fetch temperature data from Open-Meteo");
     return null;
   }
 }

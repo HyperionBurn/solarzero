@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { logger } from "./logger";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let redisInstance: any = null;
 
 function createMockRedis() {
@@ -35,10 +36,10 @@ function getRedis() {
       lazyConnect: true,
     });
     redisInstance.on("error", (err: unknown) => {
-      console.warn("Redis connection error:", err);
+      logger.warn({ err }, "Redis connection error");
     });
   } catch {
-    console.warn("Failed to initialize Redis, using mock");
+    logger.warn("Failed to initialize Redis, using mock");
     redisInstance = createMockRedis();
   }
 
