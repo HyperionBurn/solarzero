@@ -39,12 +39,14 @@ export default function ProposalPage() {
 
   const statusLabel =
     proposal.status === "pending"
-      ? "Generating..."
-      : proposal.status === "generating"
+      ? "Queued..."
+      : proposal.status === "processing"
         ? "Generating PDF..."
         : proposal.status === "ready"
           ? "Ready"
-          : proposal.status;
+          : proposal.status === "failed"
+            ? "Failed"
+            : proposal.status;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4 md:p-6">
@@ -90,7 +92,7 @@ export default function ProposalPage() {
 
           {/* Status */}
           <div className="flex items-center gap-3 rounded-lg border p-4">
-            {(proposal.status === "pending" || proposal.status === "generating") && (
+            {(proposal.status === "pending" || proposal.status === "processing") && (
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
             )}
             {proposal.status === "ready" && (
@@ -98,25 +100,40 @@ export default function ProposalPage() {
                 <div className="h-2 w-2 rounded-full bg-green-500" />
               </div>
             )}
+            {proposal.status === "failed" && (
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100">
+                <div className="h-2 w-2 rounded-full bg-red-500" />
+              </div>
+            )}
             <div>
               <p className="text-sm font-medium capitalize">{statusLabel}</p>
               <p className="text-xs text-muted-foreground">
                 {proposal.status === "ready"
                   ? "Your proposal is ready to download."
-                  : "We are generating your proposal PDF. This may take a moment."}
+                  : proposal.status === "failed"
+                    ? "PDF generation failed. Please try again."
+                    : "We are generating your proposal PDF. This may take a moment."}
               </p>
             </div>
           </div>
 
           {/* Download */}
-          {proposal.status === "ready" && (
-            <Button
-              className="w-full"
-              variant="default"
-              disabled={!proposal.pdfUrl}
+          {proposal.status === "ready" && proposal.pdfUrl && (
+            <a
+              href={proposal.pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
-              <Download className="mr-1.5 h-4 w-4" />
+              <Download className="h-4 w-4" />
               Download Proposal (PDF)
+            </a>
+          )}
+
+          {proposal.status === "ready" && !proposal.pdfUrl && (
+            <Button className="w-full" disabled>
+              <FileText className="mr-1.5 h-4 w-4" />
+              PDF not yet available
             </Button>
           )}
 
@@ -124,6 +141,16 @@ export default function ProposalPage() {
             <p className="text-center text-xs text-muted-foreground">
               Auto-refreshing every 3 seconds...
             </p>
+          )}
+
+          {proposal.status === "failed" && (
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
           )}
         </CardContent>
       </Card>

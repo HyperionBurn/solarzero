@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 interface PanelGridProps {
@@ -15,17 +16,26 @@ const PANEL_HEIGHT = 1.134; // meters
 const PANEL_THICKNESS = 0.04; // meters
 const ROW_SPACING = 1.5; // meters
 
+const panelMaterial = new THREE.MeshStandardMaterial({
+  color: "#1E40AF",
+  roughness: 0.5,
+  metalness: 0.3,
+});
+
+const tempObject = new THREE.Object3D();
+
 /**
  * Grid-packs solar panels onto a rectangular roof surface.
- * Each panel is a thin box rotated to the specified tilt angle.
- * Material: deep blue (#1E40AF) with slight metalness.
+ * Uses InstancedMesh for GPU-efficient rendering — a single draw call
+ * regardless of panel count (O(1) GPU cost vs O(n) previously).
  */
 export function PanelGrid({ panelCount, roofWidth, roofDepth, tiltDeg }: PanelGridProps) {
-  const meshes = useMemo(() => {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+
+  const positions = useMemo(() => {
     const result: { position: [number, number, number]; rotation: [number, number, number] }[] = [];
 
-    // Calculate grid layout
-    const panelWidthWithSpacing = PANEL_WIDTH + 0.05; // small lateral gap
+    const panelWidthWithSpacing = PANEL_WIDTH + 0.05;
     const columns = Math.floor(roofWidth / panelWidthWithSpacing);
     const rowsPerCol = Math.floor((roofDepth - ROW_SPACING) / (PANEL_HEIGHT + ROW_SPACING)) + 1;
 
@@ -35,8 +45,6 @@ export function PanelGrid({ panelCount, roofWidth, roofDepth, tiltDeg }: PanelGr
     if (actualCount <= 0 || columns <= 0) return result;
 
     const tiltRad = THREE.MathUtils.degToRad(tiltDeg);
-    // Calculate how much the panel bottom rises when tilted around X axis
-    // Panel center must be raised so the bottom edge sits on roof surface
     const tiltOffsetY = Math.abs((PANEL_HEIGHT / 2) * Math.sin(tiltRad));
 
     const startX = -(columns * panelWidthWithSpacing) / 2 + panelWidthWithSpacing / 2;
@@ -58,27 +66,31 @@ export function PanelGrid({ panelCount, roofWidth, roofDepth, tiltDeg }: PanelGr
     return result;
   }, [panelCount, roofWidth, roofDepth, tiltDeg]);
 
+  // Update instance matrices when positions change
+  useFrame(() => {
+    if (!meshRef.current) return;
+    for (let i = 0; i < positions.length; i++) {
+      const pos = positions[i]!;
+      tempObject.position.set(...pos.position);
+      tempObject.rotation.set(...pos.rotation);
+      tempObject.updateMatrix();
+      meshRef.current.setMatrixAt(i, tempObject.matrix);
+    }
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  });
+
+  if (positions.length === 0) return null;
+
   const panelGeometry = useMemo(
     () => new THREE.BoxGeometry(PANEL_WIDTH, PANEL_THICKNESS, PANEL_HEIGHT),
     []
   );
 
   return (
-    <group>
-      {meshes.map((m, i) => (
-        <mesh
-          key={i}
-          geometry={panelGeometry}
-          position={m.position}
-          rotation={m.rotation}
-        >
-          <meshStandardMaterial
-            color="#1E40AF"
-            roughness={0.5}
-            metalness={0.3}
-          />
-        </mesh>
-      ))}
-    </group>
+    <instancedMesh
+      ref={meshRef}
+      args={[panelGeometry, panelMaterial, positions.length]}
+      frustumCulled={false}
+    />
   );
 }
