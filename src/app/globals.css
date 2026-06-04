@@ -1,26 +1,70 @@
-@import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+﻿@import "tailwindcss";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-primary: var(--primary, #0d9488);
+  --color-primary-foreground: var(--primary-foreground, #ffffff);
+  --color-secondary: var(--secondary, #f59e0b);
+  --color-secondary-foreground: var(--secondary-foreground, #ffffff);
+  --color-background: var(--background, #ffffff);
+  --color-foreground: var(--foreground, #0f172a);
+  --color-muted: var(--muted, #f1f5f9);
+  --color-muted-foreground: var(--muted-foreground, #64748b);
+  --color-accent: var(--accent, #f0fdfa);
+  --color-accent-foreground: var(--accent-foreground, #0d9488);
+  --color-card: var(--card, #ffffff);
+  --color-card-foreground: var(--card-foreground, #0f172a);
+  --color-border: var(--border, #e2e8f0);
+  --color-destructive: var(--destructive, #ef4444);
+  --color-destructive-foreground: var(--destructive-foreground, #ffffff);
+  --color-popover: var(--popover, #ffffff);
+  --color-popover-foreground: var(--popover-foreground, #0f172a);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --primary: #0d9488;
+  --primary-foreground: #ffffff;
+  --secondary: #f59e0b;
+  --secondary-foreground: #ffffff;
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f0fdfa;
+  --accent-foreground: #0d9488;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --border: #e2e8f0;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --ring: #0d9488;
+}
+
+.dark {
+  --primary: #14b8a6;
+  --primary-foreground: #022c22;
+  --secondary: #fbbf24;
+  --secondary-foreground: #422006;
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #134e4a;
+  --accent-foreground: #5eead4;
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+  --border: #334155;
+  --destructive: #f87171;
+  --destructive-foreground: #450a0a;
+  --popover: #1e293b;
+  --popover-foreground: #f8fafc;
+  --ring: #14b8a6;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }

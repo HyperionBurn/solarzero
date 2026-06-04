@@ -42,3 +42,5 @@ next-env.d.ts
 
 # output
 /dist
+
+/src/generated/prisma
