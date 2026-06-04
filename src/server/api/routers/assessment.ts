@@ -66,8 +66,7 @@ export const assessmentRouter = router({
           npv25yrAed: result.npv25yrAed,
           co2OffsetTons: result.co2OffsetTons,
           dewaTariffAed: result.dewaTariffAed,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          rawResponseJson: result.rawResponseJson as any,
+          rawResponseJson: result.rawResponseJson as Record<string, string>,
         },
         update: {
           dataSource: result.dataSource,
@@ -81,8 +80,7 @@ export const assessmentRouter = router({
           npv25yrAed: result.npv25yrAed,
           co2OffsetTons: result.co2OffsetTons,
           dewaTariffAed: result.dewaTariffAed,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          rawResponseJson: result.rawResponseJson as any,
+          rawResponseJson: result.rawResponseJson as Record<string, string>,
           updatedAt: new Date(),
         },
       });
