@@ -21,9 +21,18 @@ jobs:
           cache: "npm"
       - run: npm ci --legacy-peer-deps
       - run: npx prisma generate
-      - run: npm run type-check
-      - run: npm run lint
-      - run: npm run build
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm run test:run
+
+      - name: Build
+        run: npm run build
 
   deploy:
     needs: check
@@ -31,5 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy to production
-        run: echo "Add your deployment steps here (Railway, Vercel, Docker, etc.)"
+      - name: Deploy to Vercel
+        run: npx vercel --prod --yes
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
