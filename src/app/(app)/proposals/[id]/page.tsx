@@ -5,18 +5,36 @@ import { api } from "@/trpc/react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, FileText, Loader2, ArrowLeft } from "lucide-react";
-import { useEffect } from "react";
+import { Download, FileText, Loader2, ArrowLeft, RefreshCw } from "lucide-react";
+import { useState } from "react";
 
 export default function ProposalPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = params.id;
+  const [retryLoading, setRetryLoading] = useState(false);
 
-  const { data: proposal, isLoading } = api.proposal.getById.useQuery(
+  const { data: proposal, isLoading, refetch } = api.proposal.getById.useQuery(
     { id },
-    { enabled: !!id, refetchInterval: (query) => query.state.data?.status === "pending" ? 3000 : false }
+    { enabled: !!id, refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "pending" || status === "processing" ? 2000 : false;
+    } }
   );
+
+  const regenerateProposal = api.proposal.generate.useMutation();
+
+  const handleRetry = async () => {
+    if (!proposal?.buildingId) return;
+    setRetryLoading(true);
+    try {
+      await regenerateProposal.mutateAsync({ buildingId: proposal.buildingId });
+      await refetch();
+    } catch {
+    } finally {
+      setRetryLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -39,7 +57,7 @@ export default function ProposalPage() {
 
   const statusLabel =
     proposal.status === "pending"
-      ? "Queued..."
+      ? "Preparing..."
       : proposal.status === "processing"
         ? "Generating PDF..."
         : proposal.status === "ready"
@@ -147,9 +165,15 @@ export default function ProposalPage() {
             <Button
               className="w-full"
               variant="outline"
-              onClick={() => window.location.reload()}
+              onClick={handleRetry}
+              disabled={retryLoading}
             >
-              Retry
+              {retryLoading ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-1.5 h-4 w-4" />
+              )}
+              Retry Generation
             </Button>
           )}
         </CardContent>
