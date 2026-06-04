@@ -78,6 +78,8 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
     try {
       await runAssessment.mutateAsync({ buildingId: id });
       await refetchAssessment();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Assessment failed. Please try again.", "error");
     } finally {
       setAssessmentLoading(false);
     }
@@ -90,6 +92,8 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
       if (result?.id) {
         router.push(`/proposals/${result.id}`);
       }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to generate proposal.", "error");
     } finally {
       setExportLoading(false);
     }

@@ -1,10 +1,8 @@
-import { cleanEnvValue } from "../env";
-
 const OVERPASS_URL =
-  cleanEnvValue(process.env.OVERPASS_API_URL) ||
-  "https://overpass-api.de/api/interpreter";
+  process.env.OVERPASS_API_URL || "https://overpass-api.de/api/interpreter";
 
 const OSM_TIMEOUT_MS = 25_000;
+const OSM_MAX_RETRIES = 2;
 
 export interface OSMResponse {
   version: number;
@@ -31,6 +29,37 @@ export interface OSMElement {
   geometry?: { lat: number; lon: number }[];
 }
 
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  retries: number = OSM_MAX_RETRIES,
+): Promise<Response> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), OSM_TIMEOUT_MS);
+      try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        if (response.ok) return response;
+        if (response.status === 429 && attempt < retries) {
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        throw new Error(`OSM API returned ${response.status}: ${response.statusText}`);
+      } finally {
+        clearTimeout(timeout);
+      }
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+      }
+    }
+  }
+  throw lastError;
+}
+
 export async function queryBuildingsAround(
   lat: number,
   lng: number,
@@ -38,28 +67,14 @@ export async function queryBuildingsAround(
 ): Promise<OSMResponse> {
   const query = `[out:json][timeout:15];(way["building"](around:${radius},${lat},${lng});relation["building"](around:${radius},${lat},${lng}););out body;>;out skel qt;`;
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), OSM_TIMEOUT_MS);
+  const response = await fetchWithRetry(OVERPASS_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "SolarZero/1.0 (UAE Solar Assessment Tool; contact@positivezero.com)",
+    },
+    body: new URLSearchParams({ data: query }),
+  });
 
-  try {
-    const response = await fetch(OVERPASS_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": "SolarZero/1.0 (UAE Solar Assessment Tool; contact@positivezero.com)",
-      },
-      body: new URLSearchParams({ data: query }),
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `OSM API returned ${response.status}: ${response.statusText}`,
-      );
-    }
-
-    return response.json() as Promise<OSMResponse>;
-  } finally {
-    clearTimeout(timeout);
-  }
+  return response.json() as Promise<OSMResponse>;
 }

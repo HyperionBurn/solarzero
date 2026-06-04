@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { api } from "@/trpc/react";
 import { SearchBar } from "@/components/map/SearchBar";
-import { Loader2 } from "lucide-react";
+import { Loader2, X, Building2 } from "lucide-react";
 import dynamic from "next/dynamic";
 
 const MapViewDynamic = dynamic(() => import("@/components/map/MapView"), {
@@ -19,6 +19,7 @@ export default function MapPage() {
   const [flyTo, setFlyTo] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
   const [discovering, setDiscovering] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [buildingCount, setBuildingCount] = useState<number | null>(null);
 
   const discoverArea = api.building.discoverArea.useMutation();
 
@@ -28,10 +29,12 @@ export default function MapPage() {
       setError(null);
       setDiscovering(true);
       try {
-        await discoverArea.mutateAsync({ lat, lng, radius: 200 });
+        const buildings = await discoverArea.mutateAsync({ lat, lng, radius: 200 });
+        setBuildingCount(buildings.length);
         setFlyTo({ lat, lng, zoom: 16 });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to discover buildings");
+        setBuildingCount(null);
         setFlyTo({ lat, lng, zoom: 15 });
       } finally {
         setDiscovering(false);
@@ -50,9 +53,18 @@ export default function MapPage() {
             Discovering buildings...
           </div>
         )}
+        {!discovering && buildingCount !== null && (
+          <div className="mt-2 flex items-center gap-2 rounded-md bg-black/60 px-3 py-1.5 text-xs text-white backdrop-blur">
+            <Building2 className="h-3 w-3" />
+            {buildingCount} building{buildingCount !== 1 ? "s" : ""} found
+          </div>
+        )}
         {error && (
-          <div className="mt-2 max-w-xs rounded-md bg-red-500/80 px-3 py-1.5 text-xs text-white backdrop-blur">
-            {error}
+          <div className="mt-2 flex items-center gap-2 rounded-md bg-red-500/80 px-3 py-1.5 text-xs text-white backdrop-blur">
+            <span className="flex-1">{error}</span>
+            <button onClick={() => setError(null)} className="ml-1 rounded p-0.5 hover:bg-white/20">
+              <X className="h-3 w-3" />
+            </button>
           </div>
         )}
       </div>
