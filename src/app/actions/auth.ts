@@ -3,6 +3,8 @@
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { generateVerificationToken, getVerificationUrl } from "@/lib/email/verify";
+import { sendVerificationEmail } from "@/lib/email/send";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -12,7 +14,7 @@ const loginSchema = z.object({
 const registerSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
@@ -43,10 +45,18 @@ export async function registerAction(_prevState: unknown, formData: FormData) {
     });
     const existingUser = await db.user.findUnique({ where: { email: validated.email } });
     if (existingUser) return { error: "Email already registered" };
-    const hashedPassword = await bcrypt.hash(validated.password, 10);
+    const hashedPassword = await bcrypt.hash(validated.password, 12);
     await db.user.create({
       data: { name: validated.name, email: validated.email, passwordHash: hashedPassword },
     });
+    // Send verification email (best-effort — don't fail registration if it errors)
+    try {
+      const token = await generateVerificationToken(validated.email);
+      const verificationUrl = getVerificationUrl(token);
+      await sendVerificationEmail(validated.email, validated.name, verificationUrl);
+    } catch {
+      console.warn("Failed to send verification email during registration");
+    }
     // Auth auto-login handled client-side by RegisterPage via signIn from next-auth/react
     return { error: null, success: true };
   } catch (error) {

@@ -34,13 +34,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
-      return <DefaultErrorFallback error={this.state.error} />;
+      return <DefaultErrorFallback error={this.state.error} onReset={() => this.setState({ hasError: false })} />;
     }
     return this.props.children;
   }
 }
 
-function DefaultErrorFallback({ error }: { error?: Error }) {
+function DefaultErrorFallback({ error, onReset }: { error?: Error; onReset?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-muted/30 p-8 text-center">
       <AlertTriangle className="mb-3 h-8 w-8 text-amber-500" />
@@ -51,7 +51,7 @@ function DefaultErrorFallback({ error }: { error?: Error }) {
           : "An unexpected error occurred while rendering."}
       </p>
       <button
-        onClick={() => this.setState({ hasError: false })}
+        onClick={() => onReset?.()}
         className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
       >
         Try again

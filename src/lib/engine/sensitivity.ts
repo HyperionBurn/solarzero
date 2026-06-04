@@ -2,6 +2,17 @@ import type { AssessmentResult } from "@/lib/engine/assessment";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
+/** Subset of AssessmentResult fields used by sensitivity analysis */
+export type SensitivityInput = Pick<
+  AssessmentResult,
+  | "totalCostAed"
+  | "annualSavingsAed"
+  | "annualProductionKwh"
+  | "npv25yrAed"
+  | "paybackYears"
+  | "dewaTariffAed"
+>;
+
 export interface SensitivityVariables {
   /** Percentage adjustment to DEWA tariff (e.g., 0 = no change, -15 = 15% lower) */
   tariffPercent: number;
@@ -133,7 +144,7 @@ function npvWithMods(
  * holding all other variables at baseline.
  */
 export function calculateSensitivity(
-  assessment: AssessmentResult,
+  assessment: SensitivityInput,
   variables: SensitivityVariables,
 ): SensitivityResult {
   const baselineCost = assessment.totalCostAed;

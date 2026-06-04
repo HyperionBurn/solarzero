@@ -4,6 +4,13 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
+interface NominatimResult {
+  place_id: number;
+  display_name: string;
+  lon: string;
+  lat: string;
+}
+
 interface SearchResult {
   id: string;
   place_name: string;
@@ -40,7 +47,7 @@ export function SearchBar({ onSelect }: SearchBarProps) {
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ae&limit=5&accept-language=en`
       );
       const data = await res.json();
-      setResults(data?.map((r: any) => ({ id: String(r.place_id), place_name: r.display_name, center: [parseFloat(r.lon), parseFloat(r.lat)] })) || []);
+      setResults(data?.map((r: NominatimResult) => ({ id: String(r.place_id), place_name: r.display_name, center: [parseFloat(r.lon), parseFloat(r.lat)] })) || []);
       setIsOpen(true);
     } catch { setResults([]); }
     finally { setLoading(false); }

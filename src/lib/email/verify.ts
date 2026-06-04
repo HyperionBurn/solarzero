@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { db } from "./db";
+import { db } from "@/lib/db";
 
 /**
  * Generate a verification token for email verification.

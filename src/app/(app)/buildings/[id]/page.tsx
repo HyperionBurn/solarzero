@@ -186,21 +186,23 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
             {assessment ? "Re-run Assessment" : "Run Assessment"}
           </Button>
           {assessment && (
-            <Button
-              onClick={handleExportProposal}
-              disabled={exportLoading || generateProposal.isPending}
-            >
-              {(exportLoading || generateProposal.isPending) ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-2 h-4 w-4" />
-              )}
-              Export Proposal
-            </Button>
-            <Button onClick={handleShareProposal} disabled={shareLoading} variant="outline">
-              <Share2 className="mr-2 h-4 w-4" />
-              Share Proposal
-            </Button>
+            <>
+              <Button
+                onClick={handleExportProposal}
+                disabled={exportLoading || generateProposal.isPending}
+              >
+                {(exportLoading || generateProposal.isPending) ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                Export Proposal
+              </Button>
+              <Button onClick={handleShareProposal} disabled={shareLoading} variant="outline">
+                <Share2 className="mr-2 h-4 w-4" />
+                Share Proposal
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -370,57 +372,6 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
                   )}
                 </CardContent>
               </Card>
-
-              {/* Sensitivity Analysis */}
-              {sensitivityResult && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Sensitivity Analysis</CardTitle>
-                    <CardDescription>
-                      Adjust variables to see impact on NPV & payback
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex gap-2">
-                      {(["CONSERVATIVE", "EXPECTED", "OPTIMISTIC"] as const).map((p) => (
-                        <Button key={p} size="sm" variant={p === "EXPECTED" ? "default" : "outline"} onClick={() => setSensitivityVars(PRESETS[p])}>
-                          {p.charAt(0) + p.slice(1).toLowerCase()}
-                        </Button>
-                      ))}
-                    </div>
-                    <div className="space-y-3">
-                      <SliderRow label="Tariff" min={-30} max={30} value={sensitivityVars.tariffPercent} onChange={(v) => setSensitivityVars({...sensitivityVars, tariffPercent: v})} unit="%" />
-                      <SliderRow label="Install Cost" min={-20} max={20} value={sensitivityVars.costPercent} onChange={(v) => setSensitivityVars({...sensitivityVars, costPercent: v})} unit="%" />
-                      <SliderRow label="Degradation" min={-50} max={50} value={sensitivityVars.degradationPercent} onChange={(v) => setSensitivityVars({...sensitivityVars, degradationPercent: v})} unit="%" />
-                      <SliderRow label="Discount Rate" min={-2} max={2} value={sensitivityVars.discountRatePercent} onChange={(v) => setSensitivityVars({...sensitivityVars, discountRatePercent: v})} step={0.5} unit="%" />
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <div className="flex justify-between text-sm">
-                        <span>Adjusted NPV:</span>
-                        <span className="font-semibold">AED {sensitivityResult.adjustedNpv.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                        <span>Baseline: AED {sensitivityResult.baselineNpv.toLocaleString()}</span>
-                        <span>{sensitivityResult.adjustedNpv > sensitivityResult.baselineNpv ? "↑" : "↓"} {Math.abs(sensitivityResult.adjustedNpv - sensitivityResult.baselineNpv).toLocaleString()} AED</span>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-medium mb-2 text-muted-foreground uppercase tracking-wider">Impact Ranking</h4>
-                      <div className="space-y-1.5">
-                        {sensitivityResult.tornadoData.map((t) => (
-                          <div key={t.variable} className="flex items-center gap-2 text-xs">
-                            <span className="w-28 text-right">{t.label}</span>
-                            <div className="flex-1 h-4 bg-muted rounded overflow-hidden">
-                              <div className="h-full bg-yellow-500 rounded" style={{width: `${Math.min(100, (t.impact / (sensitivityResult.tornadoData[0]?.impact || 1)) * 100)}%`}} />
-                            </div>
-                            <span className="w-24">AED {t.impact.toLocaleString()}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* 3D Viewer */}
               <Card>
