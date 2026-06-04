@@ -83,7 +83,8 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch {
+  } catch (err) {
+    logger.error({ err }, "Registration failed");
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
