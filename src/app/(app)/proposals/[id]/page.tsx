@@ -30,7 +30,8 @@ export default function ProposalPage() {
     try {
       await regenerateProposal.mutateAsync({ buildingId: proposal.buildingId });
       await refetch();
-    } catch {
+    } catch (e) {
+      console.error("Failed to regenerate proposal:", e);
     } finally {
       setRetryLoading(false);
     }

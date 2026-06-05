@@ -138,6 +138,19 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
 
   const typeColor = BUILDING_TYPE_COLORS[building.buildingType ?? ""] ?? "bg-slate-100 text-slate-800 border-slate-300";
 
+  // Pre-compute emirate & utility info (avoid IIFEs in JSX)
+  const emirateInfo = (building.lat && building.lng) ? getEmirateConfig(building.lat, building.lng) : null;
+  const utilColors: Record<string, string> = {
+    DEWA: "bg-blue-100 text-blue-800 border-blue-300",
+    ADDC: "bg-green-100 text-green-800 border-green-300",
+    SEWA: "bg-orange-100 text-orange-800 border-orange-300",
+    FEWA: "bg-gray-100 text-gray-800 border-gray-300",
+  };
+  const utilityColorClass = emirateInfo ? (utilColors[emirateInfo.utility] ?? "bg-slate-100 text-slate-800 border-slate-300") : "";
+  const tariffDisplay = emirateInfo
+    ? ` | Tariff: ${emirateInfo.tariffSlabs[0]?.rate?.toFixed(2) ?? "0.32"} AED/kWh (${emirateInfo.utility})`
+    : "";
+
   return (
     <div className="space-y-6 p-6">
       {toast && (
@@ -164,20 +177,11 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
             <span className={`inline-flex rounded-full border px-3 py-0.5 text-xs font-medium ${typeColor}`}>
               {building.buildingType ?? "Unknown"}
             </span>
-            {building.lat && building.lng && (() => {
-              const emirate = getEmirateConfig(building.lat, building.lng);
-              const utilColors: Record<string, string> = {
-                DEWA: "bg-blue-100 text-blue-800 border-blue-300",
-                ADDC: "bg-green-100 text-green-800 border-green-300",
-                SEWA: "bg-orange-100 text-orange-800 border-orange-300",
-                FEWA: "bg-gray-100 text-gray-800 border-gray-300",
-              };
-              return (
-                <span className={`inline-flex rounded-full border px-3 py-0.5 text-xs font-medium ${utilColors[emirate.utility] ?? "bg-slate-100 text-slate-800 border-slate-300"}`}>
-                  {emirate.name} · {emirate.utility}
-                </span>
-              );
-            })()}
+            {emirateInfo && (
+              <span className={`inline-flex rounded-full border px-3 py-0.5 text-xs font-medium ${utilityColorClass}`}>
+                {emirateInfo.name} · {emirateInfo.utility}
+              </span>
+            )}
             {building.roofAreaM2 && (
               <span className="text-sm text-muted-foreground">
                 Roof Area: {Math.round(building.roofAreaM2)} m²
@@ -236,11 +240,7 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
                 <CardHeader>
                   <CardTitle>Solar Assessment Results</CardTitle>
                   <CardDescription>
-                    Data source: {assessment.dataSource} | GHI: {Math.round(assessment.ghiAnnual)} kWh/m²/yr
-                    {building.lat && building.lng && (() => {
-                      const em = getEmirateConfig(building.lat, building.lng);
-                      return <> | Tariff: {em.tariffSlabs[0]?.rate?.toFixed(2) ?? "0.32"} AED/kWh ({em.utility})</>;
-                    })()}
+                    Data source: {assessment.dataSource} | GHI: {Math.round(assessment.ghiAnnual)} kWh/m²/yr{tariffDisplay}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -461,18 +461,15 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
               <InfoRow label="Type" value={building.buildingType ?? "Unknown"} />
               <InfoRow label="Roof Area" value={building.roofAreaM2 ? `${Math.round(building.roofAreaM2)} m²` : "N/A"} />
               <InfoRow label="Height" value={building.heightMeters ? `${building.heightMeters}m` : "N/A"} />
-              {building.lat && building.lng && (() => {
-                const emirate = getEmirateConfig(building.lat, building.lng);
-                return (
-                  <>
-                    <Separator />
-                    <InfoRow label="Emirate" value={emirate.name} />
-                    <InfoRow label="Utility" value={emirate.utility} />
-                    <InfoRow label="Tariff" value={`${emirate.tariffSlabs[0]?.rate?.toFixed(2) ?? "0.32"} AED/kWh`} />
-                    <InfoRow label="Net Metering" value={emirate.netMetering.replace(/_/g, " ")} />
-                  </>
-                );
-              })()}
+              {emirateInfo && (
+                <>
+                  <Separator />
+                  <InfoRow label="Emirate" value={emirateInfo.name} />
+                  <InfoRow label="Utility" value={emirateInfo.utility} />
+                  <InfoRow label="Tariff" value={`${emirateInfo.tariffSlabs[0]?.rate?.toFixed(2) ?? "0.32"} AED/kWh`} />
+                  <InfoRow label="Net Metering" value={emirateInfo.netMetering.replace(/_/g, " ")} />
+                </>
+              )}
               <Separator />
               <InfoRow label="Latitude" value={building.lat.toFixed(5)} />
               <InfoRow label="Longitude" value={building.lng.toFixed(5)} />

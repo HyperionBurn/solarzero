@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, useMemo } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useRef, useMemo, useEffect } from "react";
 import * as THREE from "three";
 
 interface PanelGridProps {
@@ -70,9 +69,9 @@ export function PanelGrid({ panelCount, roofWidth, roofDepth, tiltDeg }: PanelGr
     return result;
   }, [panelCount, roofWidth, roofDepth, tiltDeg]);
 
-  // Update instance matrices when positions change
-  useFrame(() => {
-    if (!meshRef.current) return;
+  // Sync instance matrices when positions change (only once per prop update)
+  useEffect(() => {
+    if (!meshRef.current || positions.length === 0) return;
     for (let i = 0; i < positions.length; i++) {
       const pos = positions[i]!;
       tempObject.position.set(...pos.position);
@@ -81,7 +80,7 @@ export function PanelGrid({ panelCount, roofWidth, roofDepth, tiltDeg }: PanelGr
       meshRef.current.setMatrixAt(i, tempObject.matrix);
     }
     meshRef.current.instanceMatrix.needsUpdate = true;
-  });
+  }, [positions]);
 
   if (positions.length === 0) return null;
 
