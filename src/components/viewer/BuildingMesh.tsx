@@ -193,7 +193,95 @@ export function BuildingMesh({ footprint, width = 30, depth = 20, height = 12, c
       )}
 
       <ACUnits width={width} depth={depth} height={height} />
+      {isRectangular && <RooftopAccents width={width} depth={depth} height={height} />}
     </group>
+  );
+}
+
+function RooftopAccents({ width, depth, height }: { width: number; depth: number; height: number }) {
+  const tankRadius = Math.min(width, depth) * 0.18;
+  const tankHeight = 3.2;
+  const tankX = width * 0.32;
+  const tankZ = -depth * 0.32;
+  const baseY = height + 0.0001;
+
+  const ventPositions = useMemo(() => {
+    const list: [number, number, number][] = [];
+    const count = 4;
+    for (let i = 0; i < count; i++) {
+      const x = -width * 0.38 + i * (width * 0.76 / (count - 1));
+      list.push([x, baseY, depth * 0.4]);
+    }
+    return list;
+  }, [width, depth, baseY]);
+
+  const pipePositions = useMemo(() => {
+    return [
+      [-width * 0.4, baseY, -depth * 0.4] as [number, number, number],
+      [width * 0.4, baseY, -depth * 0.4] as [number, number, number],
+    ];
+  }, [width, depth, baseY]);
+
+  return (
+    <>
+      <group position={[tankX, baseY, tankZ]}>
+        <mesh position={[0, tankHeight / 2, 0]} castShadow>
+          <cylinderGeometry args={[tankRadius, tankRadius, tankHeight, 24]} />
+          <meshStandardMaterial color="#475569" roughness={0.55} metalness={0.75} />
+        </mesh>
+        <mesh position={[0, tankHeight - 0.02, 0]} castShadow>
+          <cylinderGeometry args={[tankRadius + 0.05, tankRadius + 0.05, 0.08, 24]} />
+          <meshStandardMaterial color="#334155" roughness={0.5} metalness={0.85} />
+        </mesh>
+        <mesh position={[0, tankHeight + 0.04, 0]}>
+          <cylinderGeometry args={[tankRadius * 0.7, tankRadius * 0.9, 0.15, 24]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.4} metalness={0.6} />
+        </mesh>
+        <mesh position={[0, tankHeight + 0.18, 0]}>
+          <torusGeometry args={[tankRadius * 0.15, 0.05, 8, 16]} />
+          <meshStandardMaterial color="#64748b" roughness={0.4} metalness={0.9} />
+        </mesh>
+        {Array.from({ length: 3 }).map((_, i) => {
+          const angle = (i / 3) * Math.PI * 2;
+          return (
+            <mesh key={i} position={[Math.cos(angle) * tankRadius * 0.95, tankHeight * 0.6, Math.sin(angle) * tankRadius * 0.95]} rotation={[0, -angle, 0]}>
+              <boxGeometry args={[0.04, tankHeight * 0.5, 0.08]} />
+              <meshStandardMaterial color="#334155" roughness={0.4} metalness={0.85} />
+            </mesh>
+          );
+        })}
+      </group>
+
+      {ventPositions.map((p, i) => (
+        <group key={i} position={p}>
+          <mesh position={[0, 0.1, 0]} castShadow>
+            <boxGeometry args={[1.4, 0.2, 1.4]} />
+            <meshStandardMaterial color="#94a3b8" roughness={0.4} metalness={0.85} />
+          </mesh>
+          <mesh position={[0, 0.5, 0]} castShadow>
+            <cylinderGeometry args={[0.35, 0.4, 0.6, 12]} />
+            <meshStandardMaterial color="#cbd5e1" roughness={0.5} metalness={0.7} />
+          </mesh>
+          <mesh position={[0, 0.85, 0]}>
+            <torusGeometry args={[0.4, 0.04, 6, 16]} />
+            <meshStandardMaterial color="#64748b" roughness={0.4} metalness={0.9} />
+          </mesh>
+        </group>
+      ))}
+
+      {pipePositions.map((p, i) => (
+        <group key={i} position={p}>
+          <mesh position={[0, 1.0, 0]} castShadow>
+            <cylinderGeometry args={[0.12, 0.12, 2.0, 8]} />
+            <meshStandardMaterial color="#737373" roughness={0.4} metalness={0.85} />
+          </mesh>
+          <mesh position={[0, 2.1, 0]}>
+            <torusGeometry args={[0.18, 0.04, 6, 12]} />
+            <meshStandardMaterial color="#525252" roughness={0.4} metalness={0.85} />
+          </mesh>
+        </group>
+      ))}
+    </>
   );
 }
 
