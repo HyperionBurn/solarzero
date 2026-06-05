@@ -301,6 +301,97 @@ export function BuildingMesh({ footprint, width = 30, depth = 20, height = 12, c
 
       <ACUnits width={width} depth={depth} height={height} />
       {isRectangular && <RooftopAccents width={width} depth={depth} height={height} />}
+      {isRectangular && <GroundLevelDetails width={width} depth={depth} height={height} />}
+    </group>
+  );
+}
+
+function GroundLevelDetails({ width, depth, height }: { width: number; depth: number; height: number }) {
+  const bollardPositions = useMemo(() => {
+    const list: [number, number, number][] = [];
+    const count = 5;
+    const spacing = Math.min(width * 0.75, 12) / (count - 1);
+    const startX = -((count - 1) * spacing) / 2;
+    for (let i = 0; i < count; i++) {
+      list.push([startX + i * spacing, 0, depth / 2 + 1.4]);
+    }
+    return list;
+  }, [width, depth]);
+
+  return (
+    <group>
+      {bollardPositions.map((p, i) => (
+        <group key={i} position={p}>
+          <mesh position={[0, 0.45, 0]} castShadow>
+            <cylinderGeometry args={[0.18, 0.22, 0.9, 12]} />
+            <meshStandardMaterial color="#a1a1aa" roughness={0.85} metalness={0.1} />
+          </mesh>
+          <mesh position={[0, 0.95, 0]} castShadow>
+            <sphereGeometry args={[0.22, 12, 8]} />
+            <meshStandardMaterial color="#dc2626" emissive="#dc2626" emissiveIntensity={0.3} roughness={0.4} metalness={0.3} />
+          </mesh>
+        </group>
+      ))}
+
+      <group position={[width * 0.35, 0, depth / 2 + 0.001]}>
+        <mesh position={[0, 0.5, 0.02]} castShadow>
+          <boxGeometry args={[1.2, 1.0, 0.05]} />
+          <meshStandardMaterial color="#f1f5f9" roughness={0.6} metalness={0.3} />
+        </mesh>
+        <mesh position={[0, 0.5, 0.05]}>
+          <planeGeometry args={[0.9, 0.6]} />
+          <meshStandardMaterial color="#0f172a" roughness={0.6} metalness={0.2} />
+        </mesh>
+        <mesh position={[0, 0.5, 0.06]}>
+          <planeGeometry args={[0.7, 0.05]} />
+          <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={1.2} />
+        </mesh>
+        <mesh position={[0, 0.35, 0.06]}>
+          <planeGeometry args={[0.5, 0.04]} />
+          <meshStandardMaterial color="#facc15" emissive="#facc15" emissiveIntensity={0.9} />
+        </mesh>
+        <mesh position={[0, 0.18, 0.05]}>
+          <planeGeometry args={[0.6, 0.25]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.7} metalness={0.2} />
+        </mesh>
+        <mesh position={[-0.45, 0.5, 0.03]}>
+          <cylinderGeometry args={[0.03, 0.03, 0.4, 6]} />
+          <meshStandardMaterial color="#71717a" />
+        </mesh>
+        <mesh position={[0.45, 0.5, 0.03]}>
+          <cylinderGeometry args={[0.03, 0.03, 0.4, 6]} />
+          <meshStandardMaterial color="#71717a" />
+        </mesh>
+      </group>
+
+      <group position={[-width * 0.32, 0, depth / 2 + 0.001]}>
+        <mesh position={[0, 1.4, 0.05]}>
+          <planeGeometry args={[3.0, 2.4]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.5} metalness={0.6} />
+        </mesh>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <mesh key={i} position={[0, 0.65 + i * 0.21, 0.07]}>
+            <planeGeometry args={[2.7, 0.04]} />
+            <meshStandardMaterial color="#475569" roughness={0.7} metalness={0.3} />
+          </mesh>
+        ))}
+        <mesh position={[0, 0.3, 0.05]}>
+          <boxGeometry args={[3.2, 0.15, 0.1]} />
+          <meshStandardMaterial color="#374151" roughness={0.7} metalness={0.4} />
+        </mesh>
+        <mesh position={[0, 0.05, 0.3]} receiveShadow>
+          <boxGeometry args={[3.2, 0.1, 0.6]} />
+          <meshStandardMaterial color="#52525b" roughness={0.9} metalness={0.1} />
+        </mesh>
+        <mesh position={[-1.4, 1.4, 0.07]}>
+          <planeGeometry args={[0.2, 2.2]} />
+          <meshStandardMaterial color="#facc15" emissive="#facc15" emissiveIntensity={0.4} />
+        </mesh>
+        <mesh position={[1.4, 1.4, 0.07]}>
+          <planeGeometry args={[0.2, 2.2]} />
+          <meshStandardMaterial color="#facc15" emissive="#facc15" emissiveIntensity={0.4} />
+        </mesh>
+      </group>
     </group>
   );
 }
