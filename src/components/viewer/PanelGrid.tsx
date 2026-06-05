@@ -84,10 +84,40 @@ const panelMaterial = new THREE.MeshStandardMaterial({
   envMapIntensity: 0.85,
 });
 
+const frameMaterial = new THREE.MeshStandardMaterial({
+  color: "#9ca3af",
+  roughness: 0.45,
+  metalness: 0.85,
+});
+
+const frameEdgeGeometry = (() => {
+  const t = 0.025;
+  const h = 0.05;
+  const w = PANEL_WIDTH;
+  const l = PANEL_HEIGHT;
+  const geos: THREE.BufferGeometry[] = [];
+
+  const top = new THREE.BoxGeometry(w + 0.02, h, t);
+  top.translate(0, h / 2, -l / 2 + t / 2);
+  geos.push(top);
+  const bot = new THREE.BoxGeometry(w + 0.02, h, t);
+  bot.translate(0, h / 2, l / 2 - t / 2);
+  geos.push(bot);
+  const left = new THREE.BoxGeometry(t, h, l);
+  left.translate(-w / 2 + t / 2, h / 2, 0);
+  geos.push(left);
+  const right = new THREE.BoxGeometry(t, h, l);
+  right.translate(w / 2 - t / 2, h / 2, 0);
+  geos.push(right);
+
+  return geos;
+})();
+
 const tempObject = new THREE.Object3D();
 
 export function PanelGrid({ panelCount, roofWidth, roofDepth, tiltDeg }: PanelGridProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
+  const frameRefs = useRef<(THREE.InstancedMesh | null)[]>([null, null, null, null]);
   const panelGeometry = useMemo(
     () => new THREE.BoxGeometry(PANEL_WIDTH, PANEL_THICKNESS, PANEL_HEIGHT),
     [],
@@ -137,15 +167,38 @@ export function PanelGrid({ panelCount, roofWidth, roofDepth, tiltDeg }: PanelGr
       meshRef.current.setMatrixAt(i, tempObject.matrix);
     }
     meshRef.current.instanceMatrix.needsUpdate = true;
+
+    for (let f = 0; f < frameEdgeGeometry.length; f++) {
+      const fr = frameRefs.current[f];
+      if (!fr) continue;
+      for (let i = 0; i < positions.length; i++) {
+        const pos = positions[i]!;
+        tempObject.position.set(...pos.position);
+        tempObject.rotation.set(...pos.rotation);
+        tempObject.updateMatrix();
+        fr.setMatrixAt(i, tempObject.matrix);
+      }
+      fr.instanceMatrix.needsUpdate = true;
+    }
   }, [positions]);
 
   if (positions.length === 0) return null;
 
   return (
-    <instancedMesh
-      ref={meshRef}
-      args={[panelGeometry, panelMaterial, positions.length]}
-      frustumCulled={false}
-    />
+    <group>
+      <instancedMesh
+        ref={meshRef}
+        args={[panelGeometry, panelMaterial, positions.length]}
+        frustumCulled={false}
+      />
+      {frameEdgeGeometry.map((geo, i) => (
+        <instancedMesh
+          key={i}
+          ref={(el) => { frameRefs.current[i] = el; }}
+          args={[geo, frameMaterial, positions.length]}
+          frustumCulled={false}
+        />
+      ))}
+    </group>
   );
 }
