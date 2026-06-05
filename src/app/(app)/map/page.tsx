@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useCallback } from "react";
 import { api } from "@/trpc/react";
@@ -21,7 +21,7 @@ export default function MapPage() {
   const [error, setError] = useState<string | null>(null);
   const [buildingCount, setBuildingCount] = useState<number | null>(null);
 
-  const discoverArea = api.building.discoverArea.useMutation();
+  const scanArea = api.opportunity.scanArea.useMutation();
 
   const handleSearchSelect = useCallback(
     async (result: { place_name: string; center: [number, number] }) => {
@@ -29,34 +29,37 @@ export default function MapPage() {
       setError(null);
       setDiscovering(true);
       try {
-        const buildings = await discoverArea.mutateAsync({ lat, lng, radius: 200 });
-        setBuildingCount(buildings.length);
+        const run = await scanArea.mutateAsync({ lat, lng, radius: 300 });
+        if (run.status === "failed") {
+          throw new Error(run.error || "Geographic scan failed");
+        }
+        setBuildingCount(run.buildingsFound);
         setFlyTo({ lat, lng, zoom: 16 });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to discover buildings");
+        setError(err instanceof Error ? err.message : "Failed to scan area");
         setBuildingCount(null);
         setFlyTo({ lat, lng, zoom: 15 });
       } finally {
         setDiscovering(false);
       }
     },
-    [discoverArea],
+    [scanArea],
   );
 
   return (
     <div className="relative h-full w-full">
       <div className="absolute left-2 right-2 top-2 z-20 sm:left-4 sm:right-auto sm:top-4">
-        <h1 className="text-lg font-bold text-white drop-shadow-lg sm:text-2xl">SolarZero</h1>
+        <h1 className="text-lg font-bold text-white drop-shadow-lg sm:text-2xl">SolarZero Atlas</h1>
         {discovering && (
           <div className="mt-2 flex items-center gap-2 rounded-md bg-black/60 px-3 py-1.5 text-xs text-white backdrop-blur">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Discovering buildings...
+            Scanning & scoring area...
           </div>
         )}
         {!discovering && buildingCount !== null && (
           <div className="mt-2 flex items-center gap-2 rounded-md bg-black/60 px-3 py-1.5 text-xs text-white backdrop-blur">
             <Building2 className="h-3 w-3" />
-            {buildingCount} building{buildingCount !== 1 ? "s" : ""} found
+            {buildingCount} building{buildingCount !== 1 ? "s" : ""} scored
           </div>
         )}
         {error && (
@@ -67,6 +70,7 @@ export default function MapPage() {
             </button>
           </div>
         )}
+
       </div>
 
       <div className="absolute left-2 right-2 top-20 z-20 sm:left-4 sm:right-auto sm:top-24">

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useTheme } from "next-themes";
@@ -108,34 +108,129 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
     map.current.flyTo({ center: [flyTo.lng, flyTo.lat], zoom: flyTo.zoom ?? 16, duration: 2000 });
   }, [flyTo]);
 
-  // Render building markers
+  // Render building markers styled by opportunity priority
   useEffect(() => {
     const m = map.current;
     if (!m || !mapLoaded || !buildings) return;
     markersRef.current.forEach(mk => mk.remove());
     markersRef.current = [];
 
-    buildings.forEach((building) => {
-      const color = BUILDING_TYPE_COLORS[building.buildingType ?? "unknown"] ?? BUILDING_TYPE_COLORS.unknown;
+    const BAND_COLORS: Record<string, string> = {
+      A: "#10B981", // Emerald
+      B: "#0D9488", // Teal
+      C: "#F59E0B", // Amber
+      D: "#F97316", // Orange
+      REJECT: "#EF4444", // Rose
+      neutral: "#94A3B8"
+    };
+
+    buildings.forEach((building: any) => {
+      const opp = building.opportunity;
+      const band = opp?.scoreBand ?? "neutral";
+      const score = opp?.scoreTotal ?? 0;
+      const color = BAND_COLORS[band] ?? BAND_COLORS.neutral;
+
+      const isVerifiedSolar = opp?.nextAction === "VERIFY_SOLARIZATION";
+      const isAssessed = !!building.assessment;
+
+      // Outer styling of marker
+      let markerBorder = "2.5px solid white";
+      if (isVerifiedSolar) {
+        markerBorder = "3px solid #6366F1"; // Blue outline for verifying solar
+      } else if (isAssessed) {
+        markerBorder = "3.5px solid #0f172a"; // Dark outline for assessed buildings
+      }
+
       const el = document.createElement("div");
       el.className = "building-marker";
-      el.style.cssText = `width:13px;height:13px;border-radius:50%;background:${color};border:2.5px solid white;box-shadow:0 1px 6px rgba(0,0,0,0.25), 0 0 0 0 rgba(13,148,136,0);cursor:pointer;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);`;
-      el.addEventListener("mouseenter", () => { el.style.width = "18px"; el.style.height = "18px"; el.style.boxShadow = `0 0 0 4px ${color}33, 0 2px 10px rgba(0,0,0,0.35)`; });
-      el.addEventListener("mouseleave", () => { el.style.width = "13px"; el.style.height = "13px"; el.style.boxShadow = "0 1px 6px rgba(0,0,0,0.25), 0 0 0 0 rgba(13,148,136,0)"; });
+      el.style.cssText = `width:14px;height:14px;border-radius:50%;background:${color};border:${markerBorder};box-shadow:0 1.5px 7px rgba(0,0,0,0.3);cursor:pointer;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);`;
+      el.addEventListener("mouseenter", () => {
+        el.style.width = "18px";
+        el.style.height = "18px";
+        el.style.boxShadow = `0 0 0 5px ${color}33, 0 3px 12px rgba(0,0,0,0.4)`;
+      });
+      el.addEventListener("mouseleave", () => {
+        el.style.width = "14px";
+        el.style.height = "14px";
+        el.style.boxShadow = "0 1.5px 7px rgba(0,0,0,0.3)";
+      });
 
-      const textColor = isDark ? "#e2e8f0" : "#0f172a";
-      const mutedColor = isDark ? "#94a3b8" : "#64748b";
+      const textColor = isDark ? "#f8fafc" : "#0f172a";
+      const mutedColor = isDark ? "#94a3b8" : "#475569";
+      const borderThemeColor = isDark ? "#334155" : "#e2e8f0";
       const popupBg = isDark ? "#0f172a" : "#ffffff";
-      const html = `<div style="font-family:system-ui,sans-serif;padding:8px;background:${popupBg};border-radius:12px">
-        <p style="font-weight:600;font-size:14px;margin:0 0 6px;color:${textColor}">${escapeHtml(building.address ?? "Building")}</p>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color}"></span>
-          <span style="font-size:12px;color:${mutedColor}">${escapeHtml(building.buildingType ?? "Unknown")}</span>
-          ${building.roofAreaM2 ? `<span style="font-size:12px;color:${mutedColor}">&middot;</span><span style="font-size:12px;color:${mutedColor}">${Math.round(building.roofAreaM2)} m²</span>` : ""}
+
+      // Parse reasons and risks
+      let reasons: string[] = [];
+      let risks: string[] = [];
+      if (opp) {
+        try {
+          reasons = opp.reasonsJson ? JSON.parse(opp.reasonsJson as string) : [];
+        } catch {
+          reasons = (opp.reasonsJson as string[]) || [];
+        }
+        try {
+          risks = opp.risksJson ? JSON.parse(opp.risksJson as string) : [];
+        } catch {
+          risks = (opp.risksJson as string[]) || [];
+        }
+      }
+
+      const reasonsHtml = reasons.slice(0, 2).map(r => `
+        <div style="font-size:11px;color:${textColor};margin-bottom:4px;display:flex;gap:4px;line-height:1.4">
+          <span style="color:#0d9488">•</span>
+          <span>${escapeHtml(r)}</span>
         </div>
-        ${building.assessment ? `<div style="background:${isDark ? "#134e4a20" : "#f0fdfa"};border-radius:8px;padding:8px 10px;margin-bottom:10px;border:1px solid ${isDark ? "#134e4a" : "#ccfbf1"}"><p style="font-size:12px;color:#0d9488;margin:0;font-weight:600">${building.assessment.systemSizeKwp.toFixed(1)} kWp &middot; ${building.assessment.panelCount} panels</p></div>` : ""}
-        <a href="/buildings/${building.id}" style="display:block;text-align:center;padding:9px 14px;background:#0d9488;color:white;border-radius:9999px;font-size:12px;font-weight:600;text-decoration:none;transition:background 0.2s">${building.assessment ? "View Details" : "Assess this Building"}</a>
-      </div>`;
+      `).join("");
+
+      const riskHtml = risks.length > 0 ? `
+        <div style="font-size:11px;color:#f43f5e;margin-top:6px;font-weight:500;display:flex;gap:4px;line-height:1.4">
+          <span style="color:#ef4444">⚠</span>
+          <span>${escapeHtml(risks[0])}</span>
+        </div>
+      ` : "";
+
+      const assessmentSectionHtml = building.assessment ? `
+        <div style="background:${isDark ? "#134e4a20" : "#f0fdfa"};border-radius:8px;padding:8px 10px;margin-top:8px;border:1px solid ${isDark ? "#115e59" : "#b2f5ea"}">
+          <p style="font-size:11px;color:#0d9488;margin:0;font-weight:700">
+            ${building.assessment.systemSizeKwp.toFixed(1)} kWp &middot; ${building.assessment.panelCount} panels
+          </p>
+        </div>
+      ` : `
+        <div style="background:${isDark ? "#1e293b50" : "#f8fafc"};border-radius:8px;padding:8px 10px;margin-top:8px;border:1px solid ${borderThemeColor}">
+          <p style="font-size:11px;color:${mutedColor};margin:0;font-style:italic">
+            SolarZero assessment not run
+          </p>
+        </div>
+      `;
+
+      const ctaUrl = opp ? `/opportunities/${opp.id}` : `/buildings/${building.id}`;
+      const ctaText = opp ? "Open Dossier" : "View Building";
+
+      const html = `
+        <div style="font-family:system-ui,-apple-system,sans-serif;padding:12px;background:${popupBg};border-radius:12px;width:260px;box-shadow:0 4px 20px rgba(0,0,0,0.15)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            ${opp ? `<span style="font-weight:700;font-size:10px;padding:2.5px 6px;border-radius:4px;background:${color}15;color:${color};border:1px solid ${color}30">BAND ${band}</span>` : `<span style="font-weight:700;font-size:10px;padding:2.5px 6px;border-radius:4px;background:#94a3b815;color:#94a3b8;border:1px solid #94a3b830">UNRANKED</span>`}
+            ${opp ? `<span style="font-weight:700;font-size:13px;color:${textColor}">${score} pts</span>` : ""}
+          </div>
+          <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:${textColor};line-height:1.4">${escapeHtml(building.address ?? "Building")}</p>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+            <span style="font-size:11px;color:${mutedColor}">Type: ${escapeHtml(building.buildingType ?? "C&I")}</span>
+            ${building.roofAreaM2 ? `<span style="font-size:11px;color:${mutedColor}">&middot;</span><span style="font-size:11px;color:${mutedColor}">${Math.round(building.roofAreaM2)} m²</span>` : ""}
+          </div>
+          
+          <div style="margin-top:8px;border-top:1px border-style:solid;border-color:${borderThemeColor};padding-top:8px">
+            ${reasonsHtml}
+            ${riskHtml}
+          </div>
+          
+          ${assessmentSectionHtml}
+          
+          <a href="${ctaUrl}" style="display:block;text-align:center;padding:9px 14px;background:#0d9488;color:white;border-radius:9999px;font-size:11px;font-weight:700;text-decoration:none;transition:background 0.2s;margin-top:10px;box-shadow:0 2px 6px rgba(13,148,136,0.2)">
+            ${ctaText}
+          </a>
+        </div>
+      `;
 
       const popup = new maplibregl.Popup({
         offset: 16,
@@ -165,6 +260,7 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
     m.on("click", closePopups);
     return () => { m.off("click", closePopups); };
   }, [buildings, mapLoaded, isDark]);
+
 
   return (
     <div className="relative h-full w-full">
