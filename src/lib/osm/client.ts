@@ -42,8 +42,9 @@ async function fetchWithRetry(
       try {
         const response = await fetch(url, { ...options, signal: controller.signal });
         if (response.ok) return response;
-        if (response.status === 429 && attempt < retries) {
-          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        if ((response.status === 429 || response.status >= 500) && attempt < retries) {
+          const delay = response.status === 429 ? 1000 : 500;
+          await new Promise((r) => setTimeout(r, delay * (attempt + 1)));
           continue;
         }
         throw new Error(`OSM API returned ${response.status}: ${response.statusText}`);
