@@ -14,6 +14,28 @@ interface MapViewProps {
   flyTo?: { lat: number; lng: number; zoom?: number } | null;
 }
 
+interface MapBuilding {
+  id: string;
+  address: string;
+  lat: number;
+  lng: number;
+  buildingType: string | null;
+  roofAreaM2: number | null;
+  assessment: {
+    id: string;
+    systemSizeKwp: number;
+    panelCount: number;
+  } | null;
+  opportunity: {
+    id: string;
+    scoreTotal: number;
+    scoreBand: string;
+    nextAction: string;
+    reasonsJson: unknown;
+    risksJson: unknown;
+  } | null;
+}
+
 // Free CARTO tile styles — no API key needed
 const FREE_STYLES = {
   light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
@@ -39,6 +61,7 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
     bounds ?? { minLat: 0, maxLat: 0, minLng: 0, maxLng: 0 },
     { enabled: !!bounds }
   );
+  const mapBuildings = buildings as MapBuilding[] | undefined;
 
   // Debounced bounds update — prevents marker flickering on rapid pan/zoom
   const scheduleBoundsUpdate = useCallback(() => {
@@ -106,7 +129,7 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
   // Render building markers styled by opportunity priority
   useEffect(() => {
     const m = map.current;
-    if (!m || !mapLoaded || !buildings) return;
+    if (!m || !mapLoaded || !mapBuildings) return;
     markersRef.current.forEach(mk => mk.remove());
     markersRef.current = [];
 
@@ -119,7 +142,7 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
       neutral: "#94A3B8"
     };
 
-    buildings.forEach((building) => {
+    mapBuildings.forEach((building) => {
       const opp = building.opportunity;
       const band = opp?.scoreBand ?? "neutral";
       const score = opp?.scoreTotal ?? 0;
@@ -254,7 +277,7 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
     const closePopups = () => markersRef.current.forEach((mk) => mk.getPopup()?.remove());
     m.on("click", closePopups);
     return () => { m.off("click", closePopups); };
-  }, [buildings, mapLoaded, isDark]);
+  }, [mapBuildings, mapLoaded, isDark]);
 
 
   return (
