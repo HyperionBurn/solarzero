@@ -274,6 +274,117 @@ function Trees({ dims, isDark }: { dims: { width: number; depth: number }; isDar
   );
 }
 
+function Vehicle({ position, rotation, color, isDark }: { position: [number, number, number]; rotation: number; color: string; isDark: boolean }) {
+  const carW = 2.2;
+  const carH = 1.4;
+  const carL = 4.6;
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      <mesh position={[0, 0.4, 0]} castShadow receiveShadow>
+        <boxGeometry args={[carW, 0.7, carL]} />
+        <meshStandardMaterial color={color} roughness={0.5} metalness={0.5} />
+      </mesh>
+      <mesh position={[0, 0.4 + carH * 0.5, -0.2]} castShadow>
+        <boxGeometry args={[carW * 0.85, carH * 0.7, carL * 0.55]} />
+        <meshStandardMaterial color={isDark ? "#0f172a" : "#cbd5e1"} roughness={0.3} metalness={0.2} transparent opacity={0.75} />
+      </mesh>
+      <mesh position={[carW / 2 + 0.05, 0.4, carL / 2 - 0.3]}>
+        <boxGeometry args={[0.1, 0.3, 0.4]} />
+        <meshStandardMaterial color="#fef3c7" emissive="#fef3c7" emissiveIntensity={0.6} />
+      </mesh>
+      <mesh position={[-carW / 2 - 0.05, 0.4, carL / 2 - 0.3]}>
+        <boxGeometry args={[0.1, 0.3, 0.4]} />
+        <meshStandardMaterial color="#fef3c7" emissive="#fef3c7" emissiveIntensity={0.6} />
+      </mesh>
+      <mesh position={[carW / 2 + 0.05, 0.4, -carL / 2 + 0.3]}>
+        <boxGeometry args={[0.1, 0.2, 0.3]} />
+        <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={0.4} />
+      </mesh>
+      <mesh position={[-carW / 2 - 0.05, 0.4, -carL / 2 + 0.3]}>
+        <boxGeometry args={[0.1, 0.2, 0.3]} />
+        <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={0.4} />
+      </mesh>
+      {[[-carW / 2 + 0.1, 0, carL / 2 - 0.5], [carW / 2 - 0.1, 0, carL / 2 - 0.5], [-carW / 2 + 0.1, 0, -carL / 2 + 0.5], [carW / 2 - 0.1, 0, -carL / 2 + 0.5]].map((p, i) => (
+        <mesh key={i} position={[p[0]!, p[1]!, p[2]!]}>
+          <cylinderGeometry args={[0.4, 0.4, 0.3, 16]} />
+          <meshStandardMaterial color="#1f2937" roughness={0.9} metalness={0.1} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function SceneContext({ dims, isDark }: { dims: { width: number; depth: number }; isDark: boolean }) {
+  const roadTex = useMemo(() => {
+    const w = 1024;
+    const h = 256;
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext("2d")!;
+    ctx.fillStyle = isDark ? "#1e293b" : "#374151";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = isDark ? "rgba(255,255,255,0.85)" : "rgba(250,204,21,0.95)";
+    const dashW = 40;
+    const dashH = 6;
+    const gap = 30;
+    for (let x = 0; x < w; x += dashW + gap) {
+      ctx.fillRect(x, h / 2 - dashH / 2, dashW, dashH);
+    }
+    ctx.fillStyle = isDark ? "#475569" : "#e5e7eb";
+    ctx.fillRect(0, 0, w, 12);
+    ctx.fillRect(0, h - 12, w, 12);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;
+    return t;
+  }, [isDark]);
+
+  const fencePostCount = 24;
+  const fenceRadius = Math.max(dims.width, dims.depth) * 0.95;
+  const fenceHeight = 1.5;
+
+  const fencePosts = useMemo(() => {
+    const list: { x: number; z: number; angle: number }[] = [];
+    for (let i = 0; i < fencePostCount; i++) {
+      const angle = (i / fencePostCount) * Math.PI * 2;
+      list.push({
+        x: Math.cos(angle) * fenceRadius,
+        z: Math.sin(angle) * fenceRadius,
+        angle,
+      });
+    }
+    return list;
+  }, [fenceRadius]);
+
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[fenceRadius + 6, 0.005, 0]} receiveShadow>
+        <planeGeometry args={[12, 80]} />
+        <meshStandardMaterial map={roadTex} roughness={0.85} metalness={0.0} />
+      </mesh>
+
+      {fencePosts.map((p, i) => (
+        <group key={i} position={[p.x, 0, p.z]} rotation={[0, -p.angle, 0]}>
+          <mesh position={[0, fenceHeight / 2, 0]} castShadow>
+            <boxGeometry args={[0.08, fenceHeight, 0.08]} />
+            <meshStandardMaterial color={isDark ? "#64748b" : "#9ca3af"} roughness={0.7} metalness={0.5} />
+          </mesh>
+          {i < fencePosts.length - 1 && (
+            <mesh position={[Math.sin(Math.PI / fencePostCount) * fenceRadius, fenceHeight * 0.6, 0]}>
+              <boxGeometry args={[Math.sin(Math.PI / fencePostCount) * fenceRadius * 2, 0.04, 0.04]} />
+              <meshStandardMaterial color={isDark ? "#94a3b8" : "#cbd5e1"} roughness={0.6} metalness={0.7} />
+            </mesh>
+          )}
+        </group>
+      ))}
+
+      <Vehicle position={[fenceRadius + 6, 0, 6]} rotation={0} color="#1e40af" isDark={isDark} />
+      <Vehicle position={[fenceRadius + 6, 0, -6]} rotation={0} color="#dc2626" isDark={isDark} />
+    </group>
+  );
+}
+
 function Scene({ buildingType, roofAreaM2, heightMeters, panelCount, isDark }: Solar3DViewerProps & { isDark: boolean }) {
   const dims = getFootprintDims(buildingType, roofAreaM2);
   const bldHeight = heightMeters || 12;
@@ -307,6 +418,7 @@ function Scene({ buildingType, roofAreaM2, heightMeters, panelCount, isDark }: S
 
       <GroundGrid isDark={isDark} />
       <Trees dims={dims} isDark={isDark} />
+      <SceneContext dims={dims} isDark={isDark} />
 
       <OrbitControls
         enableDamping
