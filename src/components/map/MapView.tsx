@@ -96,24 +96,52 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
       const color = BUILDING_TYPE_COLORS[building.buildingType ?? "unknown"] ?? BUILDING_TYPE_COLORS.unknown;
       const el = document.createElement("div");
       el.className = "building-marker";
-      el.style.cssText = `width:12px;height:12px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.3);cursor:pointer;transition:width 0.15s,height 0.15s,box-shadow 0.15s;`;
-      el.addEventListener("mouseenter", () => { el.style.width = "16px"; el.style.height = "16px"; el.style.boxShadow = "0 0 8px rgba(0,0,0,0.5)"; });
-      el.addEventListener("mouseleave", () => { el.style.width = "12px"; el.style.height = "12px"; el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.3)"; });
+      el.style.cssText = `width:13px;height:13px;border-radius:50%;background:${color};border:2.5px solid white;box-shadow:0 1px 6px rgba(0,0,0,0.25), 0 0 0 0 rgba(13,148,136,0);cursor:pointer;transition:all 0.2s cubic-bezier(0.16,1,0.3,1);`;
+      el.addEventListener("mouseenter", () => { el.style.width = "18px"; el.style.height = "18px"; el.style.boxShadow = `0 0 0 4px ${color}33, 0 2px 10px rgba(0,0,0,0.35)`; });
+      el.addEventListener("mouseleave", () => { el.style.width = "13px"; el.style.height = "13px"; el.style.boxShadow = "0 1px 6px rgba(0,0,0,0.25), 0 0 0 0 rgba(13,148,136,0)"; });
 
       const textColor = isDark ? "#e2e8f0" : "#0f172a";
       const mutedColor = isDark ? "#94a3b8" : "#64748b";
-      const html = `<div style="font-family:system-ui,sans-serif;padding:4px">
-        <p style="font-weight:600;font-size:13px;margin:0 0 4px;color:${textColor}">${escapeHtml(building.address ?? "Building")}</p>
-        <p style="font-size:12px;color:${mutedColor};margin:0 0 4px">Type: <span style="color:${color};font-weight:600">${escapeHtml(building.buildingType ?? "Unknown")}</span>${building.roofAreaM2 ? ` &middot; ${Math.round(building.roofAreaM2)} m²` : ""}</p>
-        ${building.assessment ? `<p style="font-size:12px;color:#0d9488;margin:0 0 8px">Assessed: ${building.assessment.systemSizeKwp.toFixed(1)} kWp &middot; ${building.assessment.panelCount} panels</p>` : ""}
-        <a href="/buildings/${building.id}" style="display:inline-block;padding:6px 14px;background:#0d9488;color:white;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">Assess this Building</a>
+      const popupBg = isDark ? "#0f172a" : "#ffffff";
+      const html = `<div style="font-family:system-ui,sans-serif;padding:8px;background:${popupBg};border-radius:12px">
+        <p style="font-weight:600;font-size:14px;margin:0 0 6px;color:${textColor}">${escapeHtml(building.address ?? "Building")}</p>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color}"></span>
+          <span style="font-size:12px;color:${mutedColor}">${escapeHtml(building.buildingType ?? "Unknown")}</span>
+          ${building.roofAreaM2 ? `<span style="font-size:12px;color:${mutedColor}">&middot;</span><span style="font-size:12px;color:${mutedColor}">${Math.round(building.roofAreaM2)} m²</span>` : ""}
+        </div>
+        ${building.assessment ? `<div style="background:${isDark ? "#134e4a20" : "#f0fdfa"};border-radius:8px;padding:8px 10px;margin-bottom:10px;border:1px solid ${isDark ? "#134e4a" : "#ccfbf1"}"><p style="font-size:12px;color:#0d9488;margin:0;font-weight:600">${building.assessment.systemSizeKwp.toFixed(1)} kWp &middot; ${building.assessment.panelCount} panels</p></div>` : ""}
+        <a href="/buildings/${building.id}" style="display:block;text-align:center;padding:9px 14px;background:#0d9488;color:white;border-radius:9999px;font-size:12px;font-weight:600;text-decoration:none;transition:background 0.2s">${building.assessment ? "View Details" : "Assess this Building"}</a>
       </div>`;
 
-      const popup = new maplibregl.Popup({ offset: 14, closeButton: true, maxWidth: "280px" }).setHTML(html);
+      const popup = new maplibregl.Popup({
+        offset: 16,
+        closeButton: false,
+        closeOnClick: false,
+        maxWidth: "300px",
+        className: isDark ? "map-popup-dark" : "map-popup-light",
+      }).setHTML(html);
+
+      // Custom close — clicking anywhere on the map closes all popups
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        // Close all other popups first
+        markersRef.current.forEach((mk) => mk.getPopup()?.remove());
+        // Toggle this one
+        const popup2 = marker.getPopup();
+        if (popup2 && popup2.isOpen()) {
+          popup2.remove();
+        } else {
+          marker.togglePopup();
+        }
+      });
+
       const marker = new maplibregl.Marker({ element: el, anchor: "center" })
         .setLngLat([building.lng, building.lat]).setPopup(popup).addTo(m);
       markersRef.current.push(marker);
     });
+    // Close popups when map is clicked
+    m.on("click", () => { markersRef.current.forEach((mk) => mk.getPopup()?.remove()); });
   }, [buildings, mapLoaded, isDark]);
 
   return (

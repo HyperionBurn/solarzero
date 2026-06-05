@@ -68,3 +68,80 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* ── Premium Range Slider ── */
+input[type="range"].premium-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+input[type="range"].premium-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--muted);
+  transition: background 0.2s ease;
+}
+
+input[type="range"].premium-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--primary);
+  border: 2.5px solid var(--card);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(13, 148, 136, 0.15);
+  margin-top: -6px;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+input[type="range"].premium-range::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 4px rgba(13, 148, 136, 0.15);
+}
+
+input[type="range"].premium-range:focus::-webkit-slider-thumb {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15), 0 0 0 4px rgba(13, 148, 136, 0.2);
+}
+
+input[type="range"].premium-range::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--muted);
+  border: none;
+}
+
+input[type="range"].premium-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--primary);
+  border: 2.5px solid var(--card);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+input[type="range"].premium-range::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+input[type="range"].premium-range:focus-visible {
+  outline: none;
+}
+
+input[type="range"].premium-range:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+input[type="range"].premium-range:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
