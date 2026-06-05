@@ -46,7 +46,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-white px-6 py-4">
+      <header className="border-b bg-white px-4 py-3 sm:px-6 sm:py-4">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600 text-xs font-bold text-white">SZ</div>
@@ -59,13 +59,13 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
+      <main className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">{building.address}</h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="text-lg font-bold sm:text-2xl">{building.address}</h1>
             <span className="rounded-full bg-blue-50 px-3 py-0.5 text-xs font-medium text-blue-700 border border-blue-300">{emirate.name} · {emirate.utility}</span>
           </div>
-          <div className="mt-2 flex gap-3 text-sm text-muted-foreground">
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
             <span>System: {assessment.systemSizeKwp.toFixed(1)} kWp</span>
             <span>·</span>
             <span>{assessment.panelCount} panels</span>
