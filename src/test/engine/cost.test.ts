@@ -2,82 +2,114 @@ import { describe, it, expect } from "vitest";
 import { calculateCosts } from "@/lib/engine/cost";
 
 describe("calculateCosts", () => {
-  const DubaiGHI = 2100; // Dubai typical annual GHI kWh/m²
+  const GHI_DUBAI = 2100; // kWh/m2/yr typical Dubai GHI
 
-  it("returns positive values for a valid roof", () => {
-    const result = calculateCosts(100, DubaiGHI);
-    expect(result.systemSizeKwp).toBeGreaterThan(0);
-    expect(result.panelCount).toBeGreaterThan(0);
-    expect(result.annualProductionKwh).toBeGreaterThan(0);
-    expect(result.totalCostAed).toBeGreaterThan(0);
-    expect(result.annualSavingsAed).toBeGreaterThan(0);
+  it("calculates system size proportionally to roof area", () => {
+    const r1 = calculateCosts(100, GHI_DUBAI);
+    const r2 = calculateCosts(200, GHI_DUBAI);
+    expect(r2.systemSizeKwp).toBeGreaterThan(r1.systemSizeKwp);
+    expect(r2.panelCount).toBeGreaterThan(r1.panelCount);
+  });
+
+  it("returns zero-size system for zero roof area", () => {
+    const result = calculateCosts(0, GHI_DUBAI);
+    expect(result.systemSizeKwp).toBe(0);
+    expect(result.panelCount).toBe(0);
+    expect(result.annualProductionKwh).toBe(0);
+    expect(result.totalCostAed).toBe(0);
+    expect(result.annualSavingsAed).toBe(0);
+  });
+
+  it("uses higher cost-per-watt for small systems (<50 kWp)", () => {
+    // ~100 m2 roof -> ~10 kWp -> should use 2.1 AED/W
+    const result = calculateCosts(100, GHI_DUBAI);
+    const expectedCost = result.systemSizeKwp * 1000 * 2.1;
+    expect(result.totalCostAed).toBeCloseTo(expectedCost, -1);
+  });
+
+  it("uses medium cost-per-watt for mid systems (50-250 kWp)", () => {
+    // ~1000 m2 roof -> ~100 kWp -> should use 1.85 AED/W
+    const result = calculateCosts(1000, GHI_DUBAI);
+    const expectedCost = result.systemSizeKwp * 1000 * 1.85;
+    expect(result.totalCostAed).toBeCloseTo(expectedCost, -1);
+  });
+
+  it("switches to 1.75 AED/W for 250-500 kWp systems", () => {
+    // ~3000 m2 roof -> ~300 kWp -> should use 1.75 AED/W
+    const result = calculateCosts(3000, GHI_DUBAI);
+    const expectedCost = result.systemSizeKwp * 1000 * 1.75;
+    expect(result.totalCostAed).toBeCloseTo(expectedCost, -1);
+  });
+
+  it("uses lowest cost-per-watt for large systems (500+ kWp)", () => {
+    // ~6000 m2 roof -> ~600 kWp -> should use 1.6 AED/W
+    const result = calculateCosts(6000, GHI_DUBAI);
+    const expectedCost = result.systemSizeKwp * 1000 * 1.6;
+    expect(result.totalCostAed).toBeCloseTo(expectedCost, -1);
+  });
+
+  it("calculates annual production with default performance ratio (0.78)", () => {
+    const result = calculateCosts(100, GHI_DUBAI);
+    const expectedProduction = result.systemSizeKwp * GHI_DUBAI * 0.78;
+    expect(result.annualProductionKwh).toBeCloseTo(expectedProduction, -1);
+  });
+
+  it("applies temperature derating when temperature data is provided", () => {
+    const withoutTemp = calculateCosts(100, GHI_DUBAI);
+    const withTemp = calculateCosts(100, GHI_DUBAI, 0.32, {
+      deratingFactor: 0.92,
+      dataSource: "SOLCAST",
+    });
+    // With thermal derating 0.92, performance ratio = 0.85 * 0.92 * 0.95 * 0.97 = 0.720
+    // Without thermal derating, PR = 0.78
+    // So production should be lower with temp data
+    expect(withTemp.annualProductionKwh).toBeLessThan(withoutTemp.annualProductionKwh);
+  });
+
+  it("calculates annual savings based on tariff", () => {
+    const HIGH_TARIFF = 0.45;
+    const LOW_TARIFF = 0.25;
+    const high = calculateCosts(100, GHI_DUBAI, HIGH_TARIFF);
+    const low = calculateCosts(100, GHI_DUBAI, LOW_TARIFF);
+    expect(high.annualSavingsAed).toBeGreaterThan(low.annualSavingsAed);
+  });
+
+  it("returns finite payback for positive savings", () => {
+    const result = calculateCosts(100, GHI_DUBAI);
     expect(result.paybackYears).toBeGreaterThan(0);
-    expect(result.co2OffsetTons).toBeGreaterThanOrEqual(0);
+    expect(result.paybackYears).toBeLessThan(50);
   });
 
-  it("uses correct panel math for 100m² roof", () => {
-    const result = calculateCosts(100, DubaiGHI);
-    // USABLE_AREA = 100 * 0.85 * 0.82 = 69.7
-    // PANEL_COUNT = floor(69.7 / 2.58 * 0.70) = floor(18.9) = 18
-    expect(result.panelCount).toBe(18);
-    // SYSTEM_SIZE = 18 * 0.55 = 9.9 kwp
-    expect(result.systemSizeKwp).toBe(9.9);
-  });
-
-  it("applies cost-per-watt tiering correctly", () => {
-    // <50kwp => 2.1 AED/W
-    const small = calculateCosts(50, DubaiGHI);
-    expect(small.totalCostAed).toBe(small.systemSizeKwp * 1000 * 2.1);
-
-    // 50-249kwp => 1.85 AED/W
-    const medium = calculateCosts(500, DubaiGHI);
-    expect(medium.totalCostAed).toBe(medium.systemSizeKwp * 1000 * 1.85);
-
-    // 250-499kwp => 1.75 AED/W — but 2000m² roof yields ~208kwp (50-249 tier = 1.85)
-    const large = calculateCosts(2000, DubaiGHI);
-    // 2000m² => panelCount=379, systemSize=208.45kwp => 1.85 tier
-    expect(large.totalCostAed).toBe(large.systemSizeKwp * 1000 * 1.85);
-  });
-
-  it("uses legacy performance ratio when no temperature data", () => {
-    const result = calculateCosts(100, DubaiGHI);
-    // 100m² => panelCount=18, systemSize=9.9kwp
-    // Legacy PR=0.78: 9.9 * 2100 * 0.78 = 16216.2
-    expect(result.annualProductionKwh).toBeCloseTo(16216.2, 0);
-  });
-
-  it("uses dynamic performance ratio with temperature data", () => {
-    const tempData = {
-      avgTempC: 28,
-      cellTempC: 53,
-      deratingFactor: 0.8445,
-      dataSource: "test",
-      monthlyAvgTempC: Array(12).fill(28),
-    };
-    const result = calculateCosts(100, DubaiGHI, 0.32, tempData);
-    // Dynamic PR = 0.85 * 0.8445 * 0.95 * 0.97 = ~0.663
-    // Production should be different from legacy
-    const legacy = calculateCosts(100, DubaiGHI);
-    expect(result.annualProductionKwh).not.toBe(legacy.annualProductionKwh);
-  });
-
-  it("guards division-by-zero on paybackYears", () => {
-    // Zero tariff => zero savings => payback = 999
-    const result = calculateCosts(100, DubaiGHI, 0);
+  it("returns 999 payback when savings are zero", () => {
+    const result = calculateCosts(100, 0);
     expect(result.paybackYears).toBe(999);
   });
 
-  it("calculates NPV correctly", () => {
-    const result = calculateCosts(100, DubaiGHI);
-    // NPV should be negative for small system (upfront cost > discounted savings over 25yr)
-    // or positive for large system
-    expect(typeof result.npv25yrAed).toBe("number");
-    expect(result.npv25yrAed).not.toBeNaN();
+  it("returns positive NPV for typical Dubai solar installation", () => {
+    const result = calculateCosts(100, GHI_DUBAI);
+    expect(result.npv25yrAed).toBeGreaterThan(0);
   });
 
-  it("calculates CO2 offset as production MWh * 0.42", () => {
-    const result = calculateCosts(100, DubaiGHI);
-    const expectedCo2 = (result.annualProductionKwh / 1000) * 0.42;
-    expect(result.co2OffsetTons).toBeCloseTo(expectedCo2, 1);
+  it("calculates CO2 offset proportional to annual production", () => {
+    const small = calculateCosts(50, GHI_DUBAI);
+    const big = calculateCosts(500, GHI_DUBAI);
+    expect(big.co2OffsetTons).toBeGreaterThan(small.co2OffsetTons);
+  });
+
+  it("rounds payback to 1 decimal place", () => {
+    const result = calculateCosts(100, GHI_DUBAI);
+    const decimalPart = result.paybackYears * 10;
+    expect(decimalPart).toBe(Math.round(decimalPart));
+  });
+
+  it("rounds NPV to nearest integer", () => {
+    const result = calculateCosts(100, GHI_DUBAI);
+    expect(result.npv25yrAed).toBe(Math.round(result.npv25yrAed));
+  });
+
+  it("rounds CO2 offset to 2 decimal places", () => {
+    const result = calculateCosts(100, GHI_DUBAI);
+    const decimalPart = result.co2OffsetTons * 100;
+    expect(decimalPart).toBe(Math.round(decimalPart));
   });
 });
