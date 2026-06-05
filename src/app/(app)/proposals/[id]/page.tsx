@@ -13,6 +13,7 @@ export default function ProposalPage() {
   const router = useRouter();
   const id = params.id;
   const [retryLoading, setRetryLoading] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
 
   const { data: proposal, isLoading, refetch } = api.proposal.getById.useQuery(
     { id },
@@ -27,11 +28,12 @@ export default function ProposalPage() {
   const handleRetry = async () => {
     if (!proposal?.buildingId) return;
     setRetryLoading(true);
+    setRetryError(null);
     try {
       await regenerateProposal.mutateAsync({ buildingId: proposal.buildingId });
       await refetch();
     } catch (e) {
-      console.error("Failed to regenerate proposal:", e);
+      setRetryError(e instanceof Error ? e.message : "Failed to regenerate proposal");
     } finally {
       setRetryLoading(false);
     }
@@ -163,19 +165,24 @@ export default function ProposalPage() {
           )}
 
           {proposal.status === "failed" && (
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={handleRetry}
-              disabled={retryLoading}
-            >
-              {retryLoading ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-1.5 h-4 w-4" />
+            <>
+              {retryError && (
+                <p className="text-xs text-destructive text-center">{retryError}</p>
               )}
-              Retry Generation
-            </Button>
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={handleRetry}
+                disabled={retryLoading}
+              >
+                {retryLoading ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-1.5 h-4 w-4" />
+                )}
+                Retry Generation
+              </Button>
+            </>
           )}
         </CardContent>
       </Card>
