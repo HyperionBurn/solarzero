@@ -214,3 +214,54 @@ model Proposal {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
+
+model DataConnector {
+  id             String   @id
+  name           String
+  category       String
+  baseUrl        String?
+  license        String?
+  accessModel    String   @default("unknown")
+  refreshCadence String
+  enabled        Boolean  @default(true)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ConnectorRun {
+  id            String    @id @default(cuid())
+  connectorId   String
+  status        String
+  inputJson     Json?
+  outputCount   Int       @default(0)
+  error         String?
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  @@index([connectorId, startedAt])
+  @@index([status])
+}
+
+model ConnectorSignal {
+  id            String   @id @default(cuid())
+  connectorId   String
+  entityType    String
+  entityId      String
+  buildingId    String?
+  opportunityId String?
+  signalType    String
+  sourceName    String
+  sourceUrl     String?
+  license       String?
+  confidence    Float
+  payloadJson   Json
+  observedAt    DateTime?
+  fetchedAt     DateTime @default(now())
+
+  @@index([buildingId])
+  @@index([opportunityId])
+  @@index([entityType, entityId])
+  @@index([signalType])
+  @@index([connectorId, fetchedAt])
+}

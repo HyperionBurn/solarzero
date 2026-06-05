@@ -449,6 +449,126 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
                   </Card>
                 </div>
 
+                {/* SignalGraph Data Connectors */}
+                <Card className="p-5 border-border/40 bg-muted/10">
+                  <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-4">
+                    <div>
+                      <h3 className="text-sm font-bold tracking-tight text-foreground/90 flex items-center gap-2">
+                        <span className="inline-flex h-2 w-2 rounded-full bg-teal-500 animate-pulse" />
+                        SolarZero SignalGraph™
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        Consensus data signals from federated geospatial, solar resource, and regulatory connectors.
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider bg-muted px-2 py-0.5 rounded border border-border/60">
+                      Active
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-border/30 text-muted-foreground font-semibold">
+                          <th className="pb-2 font-semibold">Signal Source</th>
+                          <th className="pb-2 font-semibold">License / Access</th>
+                          <th className="pb-2 font-semibold">Signal Type</th>
+                          <th className="pb-2 font-semibold">Observed / Fetched</th>
+                          <th className="pb-2 font-semibold text-right">Confidence</th>
+                          <th className="pb-2 font-semibold text-right">Value Payload</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/20">
+                        {(() => {
+                          interface LocalSignal {
+                            id: string;
+                            connectorId: string;
+                            signalType: string;
+                            sourceName: string;
+                            license: string | null;
+                            confidence: number;
+                            fetchedAt: Date | string;
+                            payloadJson: unknown;
+                          }
+                          const signals = (opportunity as { signals?: LocalSignal[] })?.signals;
+                          return signals && signals.length > 0 ? (
+                            signals.map((sig) => {
+                              const rawPayload = sig.payloadJson ? (typeof sig.payloadJson === "string" ? JSON.parse(sig.payloadJson) : sig.payloadJson) : {};
+                              const payload = rawPayload as Record<string, unknown>;
+                              
+                              // Render a nice value preview
+                              let valPreview = "-";
+                              if (sig.signalType === "BUILDING_FOOTPRINT") {
+                                const roofArea = payload.roofAreaM2 as number | undefined;
+                                const buildingType = payload.buildingType as string | undefined;
+                                valPreview = `${roofArea?.toLocaleString() || 0} m² (${buildingType || "C&I"})`;
+                              } else if (sig.signalType === "ROOF_AREA") {
+                                const roofArea = payload.roofAreaM2 as number | undefined;
+                                valPreview = `${roofArea?.toLocaleString() || 0} m² (ML detected)`;
+                              } else if (sig.signalType === "SOLAR_RESOURCE") {
+                                const annualGhi = payload.annualGhiKwhM2Year as number | undefined;
+                                const annualYield = payload.annualYieldKwhPerKwp as number | undefined;
+                                if (annualGhi) {
+                                  valPreview = `${Math.round(annualGhi).toLocaleString()} kWh/m²/yr`;
+                                } else if (annualYield) {
+                                  valPreview = `${annualYield.toLocaleString()} kWh/kWp/yr`;
+                                }
+                              } else if (sig.signalType === "TARIFF") {
+                                const rate = payload.tariffRateAedKwh as number | undefined;
+                                const utility = payload.utility as string | undefined;
+                                valPreview = `${rate?.toFixed(2) || "0.00"} AED/kWh (${utility || "DEWA"})`;
+                              } else if (sig.signalType === "REGULATORY_RULE") {
+                                const allowExport = payload.allowExport as boolean | undefined;
+                                const limit = payload.substationLimitKwp as number | undefined;
+                                valPreview = `${allowExport ? "Exports Allowed" : "No Grid Export"} (Sub: ${limit || 0} kWp)`;
+                              } else {
+                                valPreview = JSON.stringify(payload);
+                              }
+
+                              // Format fetch date
+                              const fetchedDate = new Date(sig.fetchedAt).toLocaleDateString(undefined, {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              });
+
+                              return (
+                                <tr key={sig.id} className="hover:bg-muted/30">
+                                  <td className="py-2.5 font-medium text-foreground/80">{sig.sourceName}</td>
+                                  <td className="py-2.5 text-muted-foreground">
+                                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded border border-border/40 font-mono">
+                                      {sig.license || "Public"}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5">
+                                    <span className="text-[10px] font-semibold text-teal-600 bg-teal-500/10 px-1.5 py-0.5 rounded uppercase">
+                                      {sig.signalType.replace("_", " ")}
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 text-muted-foreground">{fetchedDate}</td>
+                                  <td className="py-2.5 text-right font-semibold tabular-nums text-foreground/80">
+                                    {(sig.confidence * 100).toFixed(0)}%
+                                  </td>
+                                  <td className="py-2.5 text-right font-medium text-foreground/90 tabular-nums">
+                                    {valPreview}
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          ) : (
+                            <tr>
+                              <td colSpan={6} className="py-4 text-center text-muted-foreground italic">
+                                No SignalGraph connector runs found. Rescore the opportunity to initiate.
+                              </td>
+                            </tr>
+                          );
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+
                 {/* Solarization Evidence Timeline and Submission */}
                 <div className="grid gap-6 md:grid-cols-3">
                   {/* Submission Form */}

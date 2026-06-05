@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { scoreOpportunity, SCORING_VERSION } from "@/lib/opportunity/scoring";
 import type { ScoringInput } from "@/lib/opportunity/types";
+import { SignalGraphService } from "./signalGraph";
 
 export class OpportunityService {
   /**
@@ -24,6 +25,12 @@ export class OpportunityService {
       throw new Error(`Building not found: ${buildingId}`);
     }
 
+    // Run connectors to fetch signals
+    await SignalGraphService.runAllConnectorsForBuilding(buildingId);
+
+    // Get consensus data from SignalGraph
+    const consensus = await SignalGraphService.getConsensusData(buildingId);
+
     // Fetch evidence if opportunity exists, or empty array
     const evidenceList = building.opportunity?.evidence.map(e => ({
       status: e.status,
@@ -31,7 +38,7 @@ export class OpportunityService {
     })) || [];
 
     const scoringInput: ScoringInput = {
-      roofAreaM2: building.roofAreaM2,
+      roofAreaM2: consensus.consensusRoofArea !== null ? consensus.consensusRoofArea : building.roofAreaM2,
       buildingType: building.buildingType,
       lat: building.lat,
       lng: building.lng,
@@ -49,6 +56,10 @@ export class OpportunityService {
 
     const scoringOutput = scoreOpportunity(scoringInput);
 
+    // Append SignalGraph consensus reasons/risks
+    const mergedReasons = [...scoringOutput.reasons, ...consensus.reasons];
+    const mergedRisks = [...scoringOutput.risks, ...consensus.risks];
+
     // Upsert the Opportunity record
     const opportunity = await db.opportunity.upsert({
       where: { buildingId },
@@ -58,19 +69,19 @@ export class OpportunityService {
         priority: "unreviewed",
         scoreTotal: scoringOutput.scoreTotal,
         scoreBand: scoringOutput.scoreBand,
-        confidence: scoringOutput.confidence,
+        confidence: Math.round(((scoringOutput.confidence + consensus.areaConfidence + consensus.ghiConfidence) / 3) * 100) / 100,
         nextAction: scoringOutput.nextAction,
-        reasonsJson: JSON.stringify(scoringOutput.reasons),
-        risksJson: JSON.stringify(scoringOutput.risks),
+        reasonsJson: JSON.stringify(mergedReasons),
+        risksJson: JSON.stringify(mergedRisks),
         lastScoredAt: new Date(),
       },
       update: {
         scoreTotal: scoringOutput.scoreTotal,
         scoreBand: scoringOutput.scoreBand,
-        confidence: scoringOutput.confidence,
+        confidence: Math.round(((scoringOutput.confidence + consensus.areaConfidence + consensus.ghiConfidence) / 3) * 100) / 100,
         nextAction: scoringOutput.nextAction,
-        reasonsJson: JSON.stringify(scoringOutput.reasons),
-        risksJson: JSON.stringify(scoringOutput.risks),
+        reasonsJson: JSON.stringify(mergedReasons),
+        risksJson: JSON.stringify(mergedRisks),
         lastScoredAt: new Date(),
       },
     });
@@ -87,8 +98,8 @@ export class OpportunityService {
         dataCompletenessScore: scoringOutput.subScores.dataCompletenessScore,
         regulatoryScore: scoringOutput.subScores.regulatoryScore,
         totalScore: scoringOutput.scoreTotal,
-        reasonsJson: JSON.stringify(scoringOutput.reasons),
-        risksJson: JSON.stringify(scoringOutput.risks),
+        reasonsJson: JSON.stringify(mergedReasons),
+        risksJson: JSON.stringify(mergedRisks),
       },
     });
 
@@ -115,13 +126,19 @@ export class OpportunityService {
       throw new Error(`Opportunity not found: ${opportunityId}`);
     }
 
+    // Refresh connectors to fetch signals
+    await SignalGraphService.runAllConnectorsForBuilding(opportunity.buildingId);
+
+    // Get consensus data from SignalGraph
+    const consensus = await SignalGraphService.getConsensusData(opportunity.buildingId);
+
     const evidenceList = opportunity.evidence.map(e => ({
       status: e.status,
       confidence: e.confidence,
     }));
 
     const scoringInput: ScoringInput = {
-      roofAreaM2: opportunity.building.roofAreaM2,
+      roofAreaM2: consensus.consensusRoofArea !== null ? consensus.consensusRoofArea : opportunity.building.roofAreaM2,
       buildingType: opportunity.building.buildingType,
       lat: opportunity.building.lat,
       lng: opportunity.building.lng,
@@ -139,16 +156,20 @@ export class OpportunityService {
 
     const scoringOutput = scoreOpportunity(scoringInput);
 
+    // Append SignalGraph consensus reasons/risks
+    const mergedReasons = [...scoringOutput.reasons, ...consensus.reasons];
+    const mergedRisks = [...scoringOutput.risks, ...consensus.risks];
+
     // Update the Opportunity record
     const updated = await db.opportunity.update({
       where: { id: opportunityId },
       data: {
         scoreTotal: scoringOutput.scoreTotal,
         scoreBand: scoringOutput.scoreBand,
-        confidence: scoringOutput.confidence,
+        confidence: Math.round(((scoringOutput.confidence + consensus.areaConfidence + consensus.ghiConfidence) / 3) * 100) / 100,
         nextAction: scoringOutput.nextAction,
-        reasonsJson: JSON.stringify(scoringOutput.reasons),
-        risksJson: JSON.stringify(scoringOutput.risks),
+        reasonsJson: JSON.stringify(mergedReasons),
+        risksJson: JSON.stringify(mergedRisks),
         lastScoredAt: new Date(),
       },
     });
@@ -165,8 +186,8 @@ export class OpportunityService {
         dataCompletenessScore: scoringOutput.subScores.dataCompletenessScore,
         regulatoryScore: scoringOutput.subScores.regulatoryScore,
         totalScore: scoringOutput.scoreTotal,
-        reasonsJson: JSON.stringify(scoringOutput.reasons),
-        risksJson: JSON.stringify(scoringOutput.risks),
+        reasonsJson: JSON.stringify(mergedReasons),
+        risksJson: JSON.stringify(mergedRisks),
       },
     });
 

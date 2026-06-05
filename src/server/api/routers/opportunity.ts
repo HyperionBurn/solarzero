@@ -126,7 +126,15 @@ export const opportunityRouter = router({
         throw new Error(`Opportunity not found: ${input.id}`);
       }
 
-      return opportunity;
+      const signals = await db.connectorSignal.findMany({
+        where: { buildingId: opportunity.buildingId },
+        orderBy: { fetchedAt: "desc" },
+      });
+
+      return {
+        ...opportunity,
+        signals,
+      };
     }),
 
   /**
@@ -159,7 +167,19 @@ export const opportunityRouter = router({
         },
       });
 
-      return opportunity;
+      if (!opportunity) {
+        return null;
+      }
+
+      const signals = await db.connectorSignal.findMany({
+        where: { buildingId: opportunity.buildingId },
+        orderBy: { fetchedAt: "desc" },
+      });
+
+      return {
+        ...opportunity,
+        signals,
+      };
     }),
 
   /**
