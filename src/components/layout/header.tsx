@@ -15,7 +15,7 @@ export function Header() {
       .toUpperCase() ?? "U";
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-background px-6">
+    <header className="flex h-16 items-center justify-between border-b bg-background px-6 md:px-6 pl-14 md:pl-6">
       <div className="flex items-center gap-3">
         <span className="text-xl font-bold tracking-tight">
           <span className="text-teal-600">☀️</span> SolarZero

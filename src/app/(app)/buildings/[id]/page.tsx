@@ -195,11 +195,12 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
             )}
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Button
             onClick={handleRunAssessment}
             disabled={assessmentLoading || runAssessment.isPending}
             variant="secondary"
+            className="w-full sm:w-auto"
           >
             {(assessmentLoading || runAssessment.isPending) ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -213,6 +214,7 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
               <Button
                 onClick={handleExportProposal}
                 disabled={exportLoading || generateProposal.isPending}
+                className="w-full sm:w-auto"
               >
                 {(exportLoading || generateProposal.isPending) ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -221,7 +223,7 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
                 )}
                 Export Proposal
               </Button>
-              <Button onClick={handleShareProposal} disabled={shareLoading} variant="outline">
+              <Button onClick={handleShareProposal} disabled={shareLoading} variant="outline" className="w-full sm:w-auto">
                 <Share2 className="mr-2 h-4 w-4" />
                 Share Proposal
               </Button>
