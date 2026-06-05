@@ -222,6 +222,31 @@ function RooftopAccents({ width, depth, height }: { width: number; depth: number
     ];
   }, [width, depth, baseY]);
 
+  const inverterX = -width * 0.35;
+  const inverterZ = depth * 0.15;
+  const inverterW = 1.4;
+  const inverterH = 2.4;
+  const inverterD = 0.9;
+
+  const conduitPoints = useMemo(() => {
+    const pts: [number, number, number, number][] = [];
+    const startX = -width * 0.05;
+    const startZ = depth * 0.3;
+    const endX = inverterX + inverterW / 2;
+    const endZ = inverterZ;
+    const segs = 8;
+    for (let i = 0; i < segs; i++) {
+      const t1 = i / segs;
+      const t2 = (i + 1) / segs;
+      const x1 = startX + (endX - startX) * t1;
+      const z1 = startZ + (endZ - startZ) * t1;
+      const x2 = startX + (endX - startX) * t2;
+      const z2 = startZ + (endZ - startZ) * t2;
+      pts.push([x1, baseY + 0.06, z1, x2, baseY + 0.06, z2]);
+    }
+    return pts;
+  }, [width, depth, baseY, inverterX, inverterZ]);
+
   return (
     <>
       <group position={[tankX, baseY, tankZ]}>
@@ -281,6 +306,70 @@ function RooftopAccents({ width, depth, height }: { width: number; depth: number
           </mesh>
         </group>
       ))}
+
+      <group position={[inverterX, baseY, inverterZ]}>
+        <mesh position={[0, inverterH / 2, 0]} castShadow>
+          <boxGeometry args={[inverterW, inverterH, inverterD]} />
+          <meshStandardMaterial color="#f1f5f9" roughness={0.55} metalness={0.15} />
+        </mesh>
+        <mesh position={[0, inverterH - 0.1, inverterD / 2 + 0.001]}>
+          <boxGeometry args={[inverterW * 0.7, 0.12, 0.02]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.5} metalness={0.5} />
+        </mesh>
+        <mesh position={[-inverterW * 0.25, inverterH * 0.6, inverterD / 2 + 0.005]}>
+          <planeGeometry args={[0.18, 0.18]} />
+          <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.9} />
+        </mesh>
+        <mesh position={[inverterW * 0.0, inverterH * 0.6, inverterD / 2 + 0.005]}>
+          <planeGeometry args={[0.18, 0.18]} />
+          <meshStandardMaterial color="#facc15" emissive="#facc15" emissiveIntensity={0.9} />
+        </mesh>
+        <mesh position={[inverterW * 0.25, inverterH * 0.6, inverterD / 2 + 0.005]}>
+          <planeGeometry args={[0.18, 0.18]} />
+          <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={0.7} />
+        </mesh>
+        <mesh position={[0, inverterH * 0.25, inverterD / 2 + 0.001]}>
+          <planeGeometry args={[inverterW * 0.8, inverterH * 0.3]} />
+          <meshStandardMaterial color="#0f172a" roughness={0.5} metalness={0.3} />
+        </mesh>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <mesh key={i} position={[-inverterW * 0.35 + i * inverterW * 0.175, inverterH * 0.85, inverterD / 2 + 0.001]}>
+            <planeGeometry args={[0.02, inverterH * 0.12]} />
+            <meshStandardMaterial color="#475569" />
+          </mesh>
+        ))}
+        <mesh position={[inverterW / 2 - 0.1, inverterH * 0.4, -inverterD / 2 - 0.05]}>
+          <cylinderGeometry args={[0.08, 0.08, 0.4, 8]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.6} metalness={0.4} />
+        </mesh>
+        <mesh position={[inverterW / 2 - 0.1, inverterH * 0.4, -inverterD / 2 - 0.3]}>
+          <cylinderGeometry args={[0.1, 0.1, 0.05, 8]} />
+          <meshStandardMaterial color="#ef4444" roughness={0.4} metalness={0.3} />
+        </mesh>
+        <mesh position={[inverterW / 2 - 0.3, inverterH * 0.4, -inverterD / 2 - 0.05]}>
+          <cylinderGeometry args={[0.08, 0.08, 0.4, 8]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.6} metalness={0.4} />
+        </mesh>
+        <mesh position={[inverterW / 2 - 0.3, inverterH * 0.4, -inverterD / 2 - 0.3]}>
+          <cylinderGeometry args={[0.1, 0.1, 0.05, 8]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.4} metalness={0.3} />
+        </mesh>
+      </group>
+
+      {conduitPoints.map((seg, i) => {
+        const dx = seg[3] - seg[0];
+        const dz = seg[5] - seg[2];
+        const length = Math.sqrt(dx * dx + dz * dz);
+        const angle = Math.atan2(dx, dz);
+        const midX = (seg[0] + seg[3]) / 2;
+        const midZ = (seg[2] + seg[5]) / 2;
+        return (
+          <mesh key={i} position={[midX, seg[1], midZ]} rotation={[Math.PI / 2, 0, -angle]}>
+            <cylinderGeometry args={[0.04, 0.04, length, 6]} />
+            <meshStandardMaterial color="#374151" roughness={0.5} metalness={0.5} />
+          </mesh>
+        );
+      })}
     </>
   );
 }
