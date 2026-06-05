@@ -75,10 +75,11 @@ export function SearchBar({ onSelect }: SearchBarProps) {
   return (
     <div ref={containerRef} className="relative w-full max-w-md">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
         <Input
           type="text"
           placeholder="Search for an address in UAE..."
+          aria-label="Search for an address"
           value={query}
           onChange={(e) => handleChange(e.target.value)}
           className="pl-10 pr-8"
@@ -86,17 +87,19 @@ export function SearchBar({ onSelect }: SearchBarProps) {
         {query && (
           <button
             onClick={handleClear}
+            aria-label="Clear search"
             className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         )}
       </div>
       {isOpen && results.length > 0 && (
-        <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover shadow-lg">
+        <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover shadow-lg" role="listbox">
           {results.map((result) => (
             <button
               key={result.id}
+              role="option"
               className="w-full px-4 py-2 text-left text-sm hover:bg-accent"
               onClick={() => {
                 onSelect(result);

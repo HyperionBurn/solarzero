@@ -84,7 +84,7 @@ export function Sidebar() {
           variant="ghost"
           size="icon"
           onClick={() => signOut({ callbackUrl: "/" })}
-          title="Sign Out"
+          aria-label="Sign out"
         >
           <LogOut className="h-4 w-4" />
         </Button>
@@ -101,7 +101,7 @@ export function Sidebar() {
 
       {/* Mobile hamburger */}
       <div className="fixed left-4 top-3 z-50 md:hidden">
-        <Button variant="ghost" size="icon" onClick={() => setOpen(!open)}>
+        <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} aria-label={open ? "Close navigation menu" : "Open navigation menu"}>
           <Menu className="h-5 w-5" />
         </Button>
       </div>
