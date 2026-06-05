@@ -26,12 +26,16 @@ const FREE_STYLES = {
   streets: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
 };
 
+const BOUNDS_DEBOUNCE_MS = 400;
+
 export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch = 45, flyTo }: MapViewProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const boundsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeStyle = useRef<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [bounds, setBounds] = useState<{ minLat: number; maxLat: number; minLng: number; maxLng: number } | null>(null);
@@ -41,19 +45,25 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
     { enabled: !!bounds }
   );
 
-  const updateBounds = useCallback(() => {
-    const m = map.current;
-    if (!m) return;
-    const b = m.getBounds();
-    if (!b) return;
-    setBounds({ minLat: b.getSouth(), maxLat: b.getNorth(), minLng: b.getWest(), maxLng: b.getEast() });
+  // Debounced bounds update — prevents marker flickering on rapid pan/zoom
+  const scheduleBoundsUpdate = useCallback(() => {
+    if (boundsTimer.current) clearTimeout(boundsTimer.current);
+    boundsTimer.current = setTimeout(() => {
+      const m = map.current;
+      if (!m) return;
+      const b = m.getBounds();
+      if (!b) return;
+      setBounds({ minLat: b.getSouth(), maxLat: b.getNorth(), minLng: b.getWest(), maxLng: b.getEast() });
+    }, BOUNDS_DEBOUNCE_MS);
   }, []);
 
+  // Initialize map once
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapContainer.current || map.current) return;
 
-    const styleUrl = resolvedTheme === "dark" ? FREE_STYLES.dark : FREE_STYLES.light;
-    map.current = new maplibregl.Map({
+    const styleUrl = isDark ? FREE_STYLES.dark : FREE_STYLES.light;
+    activeStyle.current = styleUrl;
+    const m = new maplibregl.Map({
       container: mapContainer.current,
       style: styleUrl,
       center,
@@ -61,23 +71,36 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
       pitch,
     });
 
-    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+    m.addControl(new maplibregl.NavigationControl(), "top-right");
 
-    map.current.on("load", () => {
-      const m = map.current!;
+    m.on("load", () => {
       // Enable 3D building extrusion if supported (gracefully degrade if map style lacks layer)
       try { m.setPaintProperty("building", "fill-extrusion-height", ["get", "render_height"]); } catch { /* layer may not exist in free tile style */ }
       try { m.setPaintProperty("building", "fill-extrusion-color", "#cbd5e1"); } catch { /* layer may not exist in free tile style */ }
       try { m.setPaintProperty("building", "fill-extrusion-opacity", 0.6); } catch { /* layer may not exist in free tile style */ }
       setLoading(false);
       setMapLoaded(true);
-      updateBounds();
+      scheduleBoundsUpdate();
     });
 
-    map.current.on("moveend", updateBounds);
+    m.on("moveend", scheduleBoundsUpdate);
 
-    return () => { map.current?.remove(); };
-  }, [center, zoom, pitch, resolvedTheme, updateBounds]);
+    map.current = m;
+    return () => { m.remove(); };
+    // Intentional: only mount/unmount, never re-create on theme change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Smoothly swap map style on theme change — no full recreation
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !mapLoaded) return;
+    const nextStyle = isDark ? FREE_STYLES.dark : FREE_STYLES.light;
+    if (activeStyle.current !== nextStyle) {
+      activeStyle.current = nextStyle;
+      m.setStyle(nextStyle);
+    }
+  }, [resolvedTheme, mapLoaded]);
 
   // Fly to coordinates when parent triggers navigation
   useEffect(() => {
@@ -122,12 +145,9 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
         className: isDark ? "map-popup-dark" : "map-popup-light",
       }).setHTML(html);
 
-      // Custom close — clicking anywhere on the map closes all popups
       el.addEventListener("click", (e) => {
         e.stopPropagation();
-        // Close all other popups first
         markersRef.current.forEach((mk) => mk.getPopup()?.remove());
-        // Toggle this one
         const popup2 = marker.getPopup();
         if (popup2 && popup2.isOpen()) {
           popup2.remove();
@@ -140,8 +160,10 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
         .setLngLat([building.lng, building.lat]).setPopup(popup).addTo(m);
       markersRef.current.push(marker);
     });
-    // Close popups when map is clicked
-    m.on("click", () => { markersRef.current.forEach((mk) => mk.getPopup()?.remove()); });
+
+    const closePopups = () => markersRef.current.forEach((mk) => mk.getPopup()?.remove());
+    m.on("click", closePopups);
+    return () => { m.off("click", closePopups); };
   }, [buildings, mapLoaded, isDark]);
 
   return (

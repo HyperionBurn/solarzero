@@ -170,3 +170,37 @@ input[type="range"].premium-range:focus-visible::-moz-range-thumb {
 @keyframes shimmer-rotate {
   to { transform: rotate(360deg); }
 }
+
+/* ── Map ── */
+.maplibregl-map {
+  transition: opacity 0.3s ease;
+}
+
+/* Cross-fade when swapping tile styles */
+.maplibregl-style-transitioning {
+  animation: map-fade-in 0.4s ease;
+}
+@keyframes map-fade-in {
+  from { opacity: 0.85; }
+  to { opacity: 1; }
+}
+
+/* Popup base — remove default lib popup tip/arrow that clashes with custom HTML */
+.maplibregl-popup {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+}
+.maplibregl-popup-content {
+  padding: 0 !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.maplibregl-popup-tip {
+  display: none;
+}
+
+/* Prevent map canvas flicker on resize/reflow */
+.maplibregl-canvas-container {
+  transition: height 0.15s ease, width 0.15s ease;
+}
