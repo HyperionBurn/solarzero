@@ -32,6 +32,7 @@ export async function loginAction(_prevState: unknown, formData: FormData) {
     return { error: null, success: true, email: validated.email };
   } catch (error) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message };
+    console.error("Login action error:", error);
     return { error: "Invalid email or password" };
   }
 }
@@ -55,13 +56,14 @@ export async function registerAction(_prevState: unknown, formData: FormData) {
       const token = await generateVerificationToken(validated.email);
       const verificationUrl = getVerificationUrl(token);
       await sendVerificationEmail(validated.email, validated.name, verificationUrl);
-    } catch {
-      logger.warn("Failed to send verification email during registration");
+    } catch (err) {
+      logger.warn({ err }, "Failed to send verification email during registration");
     }
     // Auth auto-login handled client-side by RegisterPage via signIn from next-auth/react
     return { error: null, success: true };
   } catch (error) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message };
+    console.error("Register action error:", error);
     return { error: "Failed to create account" };
   }
 }

@@ -6,7 +6,7 @@ interface RedisLike {
   set(key: string, value: string | number | Buffer): Promise<"OK">;
   setex(key: string, seconds: number, value: string | number | Buffer): Promise<"OK">;
   del(...keys: string[]): Promise<number>;
-  evalsha<TArgs extends unknown[], TData = unknown>(sha1: string, keys: string[], args: TArgs): Promise<TData>;
+  evalsha<TArgs extends unknown[], TData = unknown>(sha1: string, keys: string[], args: TArgs): Promise<TData | null>;
   ping(): Promise<string>;
   on(event: string, handler: (...args: unknown[]) => void): void;
   quit(): Promise<"OK">;
