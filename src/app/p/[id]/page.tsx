@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { getEmirateConfig } from "@/lib/regulatory/emirates";
 import { calculateAllFinancingModels } from "@/lib/engine/financing";
@@ -7,7 +8,18 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 
 export const dynamic = "force-dynamic";
 
-export default async function ProposalPage({ params }: PageProps<"/p/[id]">) {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const proposal = await db.proposal.findUnique({ where: { id }, include: { building: true, assessment: true } });
+  if (!proposal?.building) return { title: "Solar Proposal - SolarZero" };
+  return {
+    title: `Solar Proposal - ${proposal.building.address}`,
+    description: `Solar assessment for ${proposal.building.address} — ${proposal.assessment ? `${proposal.assessment.systemSizeKwp.toFixed(1)} kWp` : "View details"}`,
+    openGraph: { title: `Solar Proposal - ${proposal.building.address}`, description: `${proposal.assessment?.systemSizeKwp.toFixed(1)} kWp solar system` },
+  };
+}
+
+export default async function ProposalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
   const proposal = await db.proposal.findUnique({

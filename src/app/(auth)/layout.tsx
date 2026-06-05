@@ -1,4 +1,11 @@
-﻿export default function AuthLayout({ children }: { children: React.ReactNode }) {
+﻿import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "SolarZero - Sign In",
+  description: "Sign in to your SolarZero account",
+};
+
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-teal-50 to-white px-4 dark:from-teal-950 dark:to-background">
       <div className="w-full max-w-md space-y-6">

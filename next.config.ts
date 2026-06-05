@@ -4,11 +4,9 @@ import { cleanEnvValue } from "./src/lib/env";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  reactStrictMode: true,
+  poweredByHeader: false,
   serverExternalPackages: ["pdfmake", "@foliojs-fork/fontkit"],
-  turbopack: {
-    root: process.cwd(),
-  },
-
   images: {
     remotePatterns: [
       {
@@ -17,7 +15,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-
   experimental: {
     serverActions: {
       bodySizeLimit: "5mb",

@@ -1,5 +1,11 @@
-﻿import { Sidebar } from "@/components/layout/sidebar";
+﻿import type { Metadata } from "next";
+import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+
+export const metadata: Metadata = {
+  title: "SolarZero - Dashboard",
+  description: "Manage your solar assessments and proposals",
+};
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
