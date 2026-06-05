@@ -85,6 +85,87 @@ function buildWindowTexture(rows: number, cols: number): THREE.CanvasTexture {
 
 const windowTexture = buildWindowTexture(3, 6);
 
+function buildSignTexture(): THREE.CanvasTexture {
+  const w = 1024;
+  const h = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d")!;
+
+  const grad = ctx.createLinearGradient(0, 0, w, 0);
+  grad.addColorStop(0, "#0d9488");
+  grad.addColorStop(0.5, "#14b8a6");
+  grad.addColorStop(1, "#0d9488");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.fillStyle = "rgba(255,255,255,0.06)";
+  for (let i = 0; i < w; i += 20) {
+    ctx.fillRect(i, 0, 1, h);
+  }
+
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(120, h / 2, 50, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#0d9488";
+  ctx.beginPath();
+  ctx.arc(135, h / 2 - 8, 22, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#facc15";
+  ctx.beginPath();
+  ctx.arc(135, h / 2 - 8, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#0d9488";
+  ctx.beginPath();
+  ctx.arc(135, h / 2 - 8, 8, 0, Math.PI * 2);
+  ctx.fill();
+
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2;
+    const x1 = 135 + Math.cos(angle) * 22;
+    const y1 = h / 2 - 8 + Math.sin(angle) * 22;
+    const x2 = 135 + Math.cos(angle) * 38;
+    const y2 = h / 2 - 8 + Math.sin(angle) * 38;
+    ctx.strokeStyle = "#facc15";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 80px system-ui, -apple-system, sans-serif";
+  ctx.textBaseline = "middle";
+  ctx.fillText("SOLAR", 220, h / 2 - 28);
+  ctx.font = "bold 50px system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = "#facc15";
+  ctx.fillText("ZERO", 220, h / 2 + 40);
+
+  ctx.strokeStyle = "rgba(255,255,255,0.4)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, 4);
+  ctx.lineTo(w, 4);
+  ctx.moveTo(0, h - 4);
+  ctx.lineTo(w, h - 4);
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(0,0,0,0.5)";
+  ctx.font = "italic 22px system-ui, -apple-system, sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("Clean Energy", w - 30, h - 20);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  return tex;
+}
+
+const signTexture = buildSignTexture();
+
 export function BuildingMesh({ footprint, width = 30, depth = 20, height = 12, color = "#CBD5E1" }: BuildingMeshProps) {
   const geometry = useMemo(() => {
     const shape = footprint && footprint.length >= 3 ? footprintToShape(footprint) : defaultFootprint(width, depth);
@@ -125,6 +206,32 @@ export function BuildingMesh({ footprint, width = 30, depth = 20, height = 12, c
         <mesh geometry={parapetGeo} position={[0, height, 0]} castShadow>
           <meshStandardMaterial color={new THREE.Color(color)} roughness={0.8} />
         </mesh>
+      )}
+
+      {isRectangular && (
+        <>
+          <mesh position={[0, 0.15, 0]} receiveShadow castShadow>
+            <boxGeometry args={[width + 1.2, 0.3, depth + 1.2]} />
+            <meshStandardMaterial color="#71717a" roughness={0.95} metalness={0.05} />
+          </mesh>
+          <mesh position={[0, 0.32, 0]} receiveShadow>
+            <boxGeometry args={[width + 1.4, 0.05, depth + 1.4]} />
+            <meshStandardMaterial color="#a1a1aa" roughness={0.85} metalness={0.1} />
+          </mesh>
+          <mesh position={[0, 0.34, 0]} receiveShadow>
+            <boxGeometry args={[width + 1.0, 0.02, depth + 1.0]} />
+            <meshStandardMaterial color="#52525b" roughness={0.95} metalness={0.05} />
+          </mesh>
+
+          <mesh position={[0, height * 0.85, depth / 2 + 0.03]}>
+            <planeGeometry args={[Math.min(width * 0.7, 8), Math.min(height * 0.18, 2.2)]} />
+            <meshStandardMaterial map={signTexture} emissive="#ffffff" emissiveMap={signTexture} emissiveIntensity={0.25} roughness={0.4} metalness={0.3} />
+          </mesh>
+          <mesh position={[0, height * 0.85, depth / 2 + 0.05]}>
+            <planeGeometry args={[Math.min(width * 0.72, 8.1), Math.min(height * 0.2, 2.3)]} />
+            <meshStandardMaterial color="#0f172a" roughness={0.6} metalness={0.4} side={THREE.BackSide} />
+          </mesh>
+        </>
       )}
 
       {isRectangular && (
