@@ -76,18 +76,26 @@ function buildCellTexture(): THREE.CanvasTexture {
 
 const cellTexture = buildCellTexture();
 
-const panelMaterial = new THREE.MeshStandardMaterial({
-  color: "#ffffff",
+const panelMaterial = new THREE.MeshPhysicalMaterial({
+  color: "#dce8ff",
   map: cellTexture,
-  roughness: 0.32,
-  metalness: 0.55,
-  envMapIntensity: 0.85,
+  roughness: 0.42,
+  metalness: 0.35,
+  envMapIntensity: 1.1,
+  clearcoat: 0.85,
+  clearcoatRoughness: 0.08,
+  reflectivity: 0.5,
+  sheen: 0.4,
+  sheenColor: new THREE.Color("#7dd3fc"),
+  sheenRoughness: 0.4,
+  emissive: new THREE.Color("#1e3a8a"),
+  emissiveIntensity: 0.04,
 });
 
 const frameMaterial = new THREE.MeshStandardMaterial({
   color: "#9ca3af",
-  roughness: 0.45,
-  metalness: 0.85,
+  roughness: 0.4,
+  metalness: 0.92,
 });
 
 const frameEdgeGeometry = (() => {
