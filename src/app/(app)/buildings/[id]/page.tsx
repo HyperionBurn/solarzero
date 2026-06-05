@@ -2,12 +2,17 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Solar3DViewer } from "@/components/viewer/Solar3DViewer";
+
+const Solar3DViewer = dynamic(() => import("@/components/viewer/Solar3DViewer").then((m) => ({ default: m.Solar3DViewer })), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[400px] w-full rounded-lg" />,
+});
 import { Loader2, Download, Play, ArrowLeft, Zap, Sun, DollarSign, TrendingUp, Clock, Leaf, MapPin, Share2 } from "lucide-react";
 import { getEmirateByCoords, getEmirateConfig } from "@/lib/regulatory/emirates";
 import { calculateAllFinancingModels, type FinancingModel } from "@/lib/engine/financing";
