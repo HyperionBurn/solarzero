@@ -81,10 +81,84 @@ function SolarPanelRoof({ panelCount, dims, buildingHeight }: { panelCount: numb
   );
 }
 
+function SkyDome({ isDark }: { isDark: boolean }) {
+  const tex = useMemo(() => {
+    const c = document.createElement("canvas");
+    c.width = 2;
+    c.height = 512;
+    const ctx = c.getContext("2d")!;
+    const g = ctx.createLinearGradient(0, 0, 0, 512);
+    if (isDark) {
+      g.addColorStop(0, "#020617");
+      g.addColorStop(0.4, "#0f172a");
+      g.addColorStop(0.7, "#1e3a5f");
+      g.addColorStop(1, "#3b5d80");
+    } else {
+      g.addColorStop(0, "#0c4a6e");
+      g.addColorStop(0.35, "#38bdf8");
+      g.addColorStop(0.7, "#7dd3fc");
+      g.addColorStop(1, "#e0f2fe");
+    }
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 2, 512);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, [isDark]);
+  return (
+    <mesh scale={[400, 400, 400]}>
+      <sphereGeometry args={[1, 32, 16]} />
+      <meshBasicMaterial map={tex} side={THREE.BackSide} fog={false} />
+    </mesh>
+  );
+}
+
+function GroundGrid({ isDark }: { isDark: boolean }) {
+  const tex = useMemo(() => {
+    const size = 1024;
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const ctx = c.getContext("2d")!;
+    ctx.fillStyle = isDark ? "#0f172a" : "#f1f5f9";
+    ctx.fillRect(0, 0, size, size);
+    ctx.strokeStyle = isDark ? "rgba(148,163,184,0.15)" : "rgba(100,116,139,0.18)";
+    ctx.lineWidth = 1;
+    const step = size / 32;
+    for (let i = 0; i <= 32; i++) {
+      const p = i * step;
+      ctx.beginPath();
+      ctx.moveTo(p, 0);
+      ctx.lineTo(p, size);
+      ctx.moveTo(0, p);
+      ctx.lineTo(size, p);
+      ctx.stroke();
+    }
+    const center = size / 2;
+    ctx.strokeStyle = isDark ? "rgba(13,148,136,0.3)" : "rgba(13,148,136,0.25)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(center, 0);
+    ctx.lineTo(center, size);
+    ctx.moveTo(0, center);
+    ctx.lineTo(size, center);
+    ctx.stroke();
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(8, 8);
+    t.anisotropy = 8;
+    return t;
+  }, [isDark]);
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+      <planeGeometry args={[200, 200]} />
+      <meshStandardMaterial map={tex} roughness={0.92} metalness={0.0} />
+    </mesh>
+  );
+}
+
 function Scene({ buildingType, roofAreaM2, heightMeters, panelCount, isDark }: Solar3DViewerProps & { isDark: boolean }) {
   const dims = getFootprintDims(buildingType, roofAreaM2);
   const bldHeight = heightMeters || 12;
-  const groundColor = isDark ? "#1e293b" : "#f1f5f9";
   const envIntensity = isDark ? 0.6 : 1;
 
   return (
@@ -93,20 +167,26 @@ function Scene({ buildingType, roofAreaM2, heightMeters, panelCount, isDark }: S
         position={[40, 60, 30]}
         intensity={1.5 * envIntensity}
         castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-near={1}
+        shadow-camera-far={200}
+        shadow-camera-left={-60}
+        shadow-camera-right={60}
+        shadow-camera-top={60}
+        shadow-camera-bottom={-60}
       />
-      <ambientLight intensity={0.5 * envIntensity} />
-      <hemisphereLight args={["#87CEEB", "#362907", 0.3 * envIntensity]} />
+      <ambientLight intensity={0.45 * envIntensity} />
+      <hemisphereLight args={[isDark ? "#7dd3fc" : "#87CEEB", "#362907", 0.5 * envIntensity]} />
+      <directionalLight position={[-30, 25, -20]} intensity={0.3 * envIntensity} color={isDark ? "#7dd3fc" : "#fef3c7"} />
+
+      <SkyDome isDark={isDark} />
 
       <BuildingMesh height={bldHeight} width={dims.width} depth={dims.depth} color={BUILDING_TYPE_COLORS_3D[buildingType] ?? BUILDING_TYPE_COLORS_3D.unknown} />
 
       {panelCount > 0 && <SolarPanelRoof panelCount={panelCount} dims={dims} buildingHeight={bldHeight} />}
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <planeGeometry args={[100, 100]} />
-        <meshStandardMaterial color={groundColor} roughness={0.9} />
-      </mesh>
+      <GroundGrid isDark={isDark} />
 
       <OrbitControls
         enableDamping
@@ -116,7 +196,7 @@ function Scene({ buildingType, roofAreaM2, heightMeters, panelCount, isDark }: S
         maxPolarAngle={Math.PI / 2.1}
         target={[0, bldHeight / 2, 0]}
       />
-      <Environment preset="city" />
+      <Environment preset={isDark ? "night" : "sunset"} />
     </>
   );
 }
