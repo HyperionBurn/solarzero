@@ -53,6 +53,15 @@ const getParsedJsonArray = (val: unknown): string[] => {
   return [];
 };
 
+interface OpportunityEvidenceItem {
+  id: string;
+  status: string;
+  source: string;
+  confidence: number;
+  notes: string | null;
+  createdAt: Date | string;
+}
+
 
 export default function OpportunityDossierPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -243,6 +252,7 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
 
   const { building } = opportunity;
   const { assessment } = building;
+  const evidenceTimeline = (opportunity as { evidence?: OpportunityEvidenceItem[] }).evidence ?? [];
 
   const emirateInfo = getEmirateConfig(building.lat, building.lng);
 
@@ -641,8 +651,8 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
                   <Card className="p-4 border-border/40 md:col-span-2">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Auditable Evidence Timeline</h3>
                     <div className="mt-4 space-y-3 max-h-[340px] overflow-y-auto pr-1">
-                      {opportunity.evidence && opportunity.evidence.length > 0 ? (
-                        opportunity.evidence.map((ev) => (
+                      {evidenceTimeline.length > 0 ? (
+                        evidenceTimeline.map((ev) => (
                           <div key={ev.id} className="rounded-lg border border-border/20 bg-muted/20 p-3 text-xs leading-relaxed">
                             <div className="flex items-center justify-between border-b border-border/10 pb-1.5 mb-1.5">
                               <span className={`font-semibold px-2 py-0.5 rounded ${
