@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useMemo, useEffect } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 interface PanelGridProps {
@@ -249,6 +250,11 @@ export function PanelGrid({ panelCount, roofWidth, roofDepth, tiltDeg }: PanelGr
       rl.instanceMatrix.needsUpdate = true;
     }
   }, [positions]);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    panelMaterial.emissiveIntensity = 0.04 + Math.sin(t * 0.6) * 0.025 + Math.sin(t * 0.31) * 0.012;
+  });
 
   if (positions.length === 0) return null;
 
