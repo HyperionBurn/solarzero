@@ -1,7 +1,7 @@
 "use client";
 
-import { use, useState } from "react";
-import { motion } from "framer-motion";
+import { use, useState, useEffect, useRef } from "react";
+import { motion, useInView, animate } from "framer-motion";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { api } from "@/trpc/react";
@@ -20,12 +20,12 @@ import { calculateSensitivity, CONSERVATIVE, EXPECTED, OPTIMISTIC, type Sensitiv
 const PRESETS = { CONSERVATIVE, EXPECTED, OPTIMISTIC };
 
 const BUILDING_TYPE_COLORS: Record<string, string> = {
-  warehouse: "bg-orange-100 text-orange-800 border-orange-300",
-  office: "bg-blue-100 text-blue-800 border-blue-300",
-  industrial: "bg-gray-100 text-gray-800 border-gray-300",
-  retail: "bg-green-100 text-green-800 border-green-300",
-  commercial: "bg-purple-100 text-purple-800 border-purple-300",
-  residential: "bg-teal-100 text-teal-800 border-teal-300",
+  warehouse: "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/40 dark:text-orange-200 dark:border-orange-700",
+  office: "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-700",
+  industrial: "bg-gray-100 text-gray-800 border-gray-300 dark:bg-gray-800/40 dark:text-gray-200 dark:border-gray-600",
+  retail: "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/40 dark:text-green-200 dark:border-green-700",
+  commercial: "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/40 dark:text-purple-200 dark:border-purple-700",
+  residential: "bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-900/40 dark:text-teal-200 dark:border-teal-700",
 };
 
 export default function BuildingDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -111,14 +111,29 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
 
   if (buildingLoading) {
     return (
-      <div className="space-y-6 p-6">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-4 w-48" />
+      <div className="animate-fadeIn space-y-6 p-6">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-6 w-24 rounded-lg" />
+        </div>
+        <Skeleton className="h-9 w-96 rounded-lg" />
+        <div className="flex gap-2">
+          <Skeleton className="h-6 w-28 rounded-full" />
+          <Skeleton className="h-6 w-36 rounded-full" />
+        </div>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
-            <Skeleton className="h-64 w-full" />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Skeleton className="h-36 rounded-xl" />
+              <Skeleton className="h-36 rounded-xl" />
+            </div>
+            <Skeleton className="h-72 rounded-xl" />
+            <Skeleton className="h-80 rounded-xl" />
           </div>
-          <Skeleton className="h-64 w-full" />
+          <div className="space-y-4">
+            <Skeleton className="h-36 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-24 rounded-xl" />
+          </div>
         </div>
       </div>
     );
@@ -126,11 +141,16 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
 
   if (buildingError || !building) {
     return (
-      <div className="flex flex-col items-center justify-center p-12">
-        <h2 className="text-xl font-semibold">Building not found</h2>
-        <p className="mt-2 text-muted-foreground">The requested building could not be found.</p>
-        <Button className="mt-4" onClick={() => router.push("/map")}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Map
+      <div className="flex min-h-[60vh] flex-col items-center justify-center p-12">
+        <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10">
+          <Building2 className="h-8 w-8 text-destructive" />
+        </div>
+        <h2 className="text-xl font-semibold tracking-tight">Building not found</h2>
+        <p className="mt-2 max-w-sm text-center text-sm leading-relaxed text-muted-foreground">
+          The requested building could not be located. It may have been removed or the link might be incorrect.
+        </p>
+        <Button className="mt-6 h-9 rounded-lg px-5 text-xs font-semibold active:scale-[0.97] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]" onClick={() => router.push("/map")}>
+          <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Back to Map
         </Button>
       </div>
     );
@@ -151,11 +171,16 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
     ? ` | Tariff: ${emirateInfo.tariffSlabs[0]?.rate?.toFixed(2) ?? "0.32"} AED/kWh (${emirateInfo.utility})`
     : "";
 
+  const springFast = { type: "spring" as const, stiffness: 400, damping: 28 };
+  const springGentle = { type: "spring" as const, stiffness: 260, damping: 24 };
+  const springBouncy = { type: "spring" as const, stiffness: 500, damping: 22, bounce: 0.25 };
+  const fadeUp = (d: number) => ({ initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: "-80px" }, transition: { ...springGentle, delay: d } });
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
+      transition={springGentle}
       className="space-y-6 p-6"
     >
       {toast && (
@@ -164,24 +189,40 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
           initial={{ opacity: 0, x: 40, scale: 0.95 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: 40, scale: 0.95 }}
-          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className={`fixed right-4 top-4 z-50 flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg backdrop-blur-xl ${
+          transition={{ type: "spring", stiffness: 400, damping: 26 }}
+          className={`fixed right-4 top-4 z-50 overflow-hidden rounded-xl border shadow-lg backdrop-blur-xl ${
             toast.type === "success"
-              ? "border-emerald-200 bg-emerald-50/90 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-200"
-              : "border-red-200 bg-red-50/90 text-red-800 dark:border-red-800 dark:bg-red-950/80 dark:text-red-200"
+              ? "border-emerald-200 dark:border-emerald-800"
+              : "border-red-200 dark:border-red-800"
           }`}
           key={toast.message}
         >
-          {toast.type === "success" ? (
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20">
-              <svg className="h-3 w-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
-            </div>
-          ) : (
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500/20">
-              <svg className="h-3 w-3 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </div>
-          )}
-          <span className="flex-1">{toast.message}</span>
+          <div className={`flex items-center gap-2.5 px-4 py-3 text-sm font-medium ${
+            toast.type === "success"
+              ? "bg-emerald-50/90 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-200"
+              : "bg-red-50/90 text-red-800 dark:bg-red-950/80 dark:text-red-200"
+          }`}>
+            {toast.type === "success" ? (
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20">
+                <svg className="h-3 w-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+              </div>
+            ) : (
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500/20">
+                <svg className="h-3 w-3 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </div>
+            )}
+            <span className="flex-1">{toast.message}</span>
+          </div>
+          <motion.div
+            initial={{ width: "100%" }}
+            animate={{ width: "0%" }}
+            transition={{ duration: 4, ease: "linear" }}
+            className={`h-0.5 ${
+              toast.type === "success"
+                ? "bg-emerald-500/50 dark:bg-emerald-400/50"
+                : "bg-red-500/50 dark:bg-red-400/50"
+            }`}
+          />
         </motion.div>
       )}
 
@@ -190,17 +231,17 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
         <div className="min-w-0 flex-1">
           <button
             onClick={() => router.push("/map")}
-            className="mb-3 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-muted hover:text-foreground"
+            className="mb-3 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.97]"
           >
             <ArrowLeft className="h-3 w-3" /> Back to Map
           </button>
           <h1 className="text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">{building.address}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-2.5">
-            <span className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] font-semibold uppercase tracking-[0.05em] ${typeColor}`}>
+            <span className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] font-semibold uppercase tracking-[0.05em] shadow-xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02] ${typeColor}`}>
               {building.buildingType ?? "Unknown"}
             </span>
             {emirateInfo && (
-              <span className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] font-semibold uppercase tracking-[0.05em] ${utilityColorClass}`}>
+              <span className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] font-semibold uppercase tracking-[0.05em] shadow-xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02] ${utilityColorClass}`}>
                 {emirateInfo.name} · {emirateInfo.utility}
               </span>
             )}
@@ -221,7 +262,7 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
             onClick={handleRunAssessment}
             disabled={assessmentLoading || runAssessment.isPending}
             variant="secondary"
-            className="h-9 rounded-lg px-4 text-xs font-semibold"
+            className="h-9 rounded-lg px-4 text-xs font-semibold active:scale-[0.97] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
           >
             {(assessmentLoading || runAssessment.isPending) ? (
               <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -235,7 +276,7 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
               <Button
                 onClick={handleExportProposal}
                 disabled={exportLoading || generateProposal.isPending}
-                className="h-9 rounded-lg px-4 text-xs font-semibold"
+                className="h-9 rounded-lg px-4 text-xs font-semibold active:scale-[0.97] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
               >
                 {(exportLoading || generateProposal.isPending) ? (
                   <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -259,13 +300,13 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
           {assessment ? (
             <>
               {/* Solar Assessment Results */}
-              <div className="group rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
-                <div className="rounded-[calc(0.75rem-1px)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <motion.div {...fadeUp(0)} className="group shimmer-border rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
+                <div className="rounded-[calc(0.75rem-1px)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)] transition-shadow duration-500 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),inset_0_0_50px_-20px_hsl(var(--primary)/0.12)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_50px_-20px_hsl(var(--primary)/0.15)]">
                   <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5">
                     <div>
-                      <h3 className="text-sm font-semibold">Solar Assessment Results</h3>
-                      <p className="text-[11px] text-muted-foreground">
-                        Data source: {assessment.dataSource} | GHI: {Math.round(assessment.ghiAnnual)} kWh/m²/yr{tariffDisplay}
+                      <h3 className="text-[15px] font-semibold tracking-tight">Solar Assessment Results</h3>
+                      <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
+                        Data source: {assessment.dataSource} &middot; GHI: {Math.round(assessment.ghiAnnual)} kWh/m&sup2;/yr{tariffDisplay}
                       </p>
                     </div>
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
@@ -283,15 +324,15 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
                     <MetricCard icon={Leaf} label="CO₂ Offset" value={`${assessment.co2OffsetTons.toFixed(1)} tons/yr`} />
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Financing Options */}
-              <div className="group rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
-                <div className="rounded-[calc(0.75rem-1px)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <motion.div {...fadeUp(0.1)} className="group shimmer-border rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
+                <div className="rounded-[calc(0.75rem-1px)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)] transition-shadow duration-500 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),inset_0_0_50px_-20px_hsl(var(--primary)/0.12)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_50px_-20px_hsl(var(--primary)/0.15)]">
                   <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5">
                     <div>
-                      <h3 className="text-sm font-semibold">Financing Options</h3>
-                      <p className="text-[11px] text-muted-foreground">
+                      <h3 className="text-[15px] font-semibold tracking-tight">Financing Options</h3>
+                      <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
                         Compare PPA, Lease, ESCO, and Direct Purchase
                       </p>
                     </div>
@@ -305,15 +346,15 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
                     ))}
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Sensitivity Analysis */}
-              <div className="group rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
-                <div className="rounded-[calc(0.75rem-1px)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <motion.div {...fadeUp(0.2)} className="group shimmer-border rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
+                <div className="rounded-[calc(0.75rem-1px)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)] transition-shadow duration-500 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),inset_0_0_50px_-20px_hsl(var(--primary)/0.12)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_50px_-20px_hsl(var(--primary)/0.15)]">
                   <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5">
                     <div>
-                      <h3 className="text-sm font-semibold">Sensitivity Analysis</h3>
-                      <p className="text-[11px] text-muted-foreground">
+                      <h3 className="text-[15px] font-semibold tracking-tight">Sensitivity Analysis</h3>
+                      <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
                         Adjust key variables to see impact on NPV and payback
                       </p>
                     </div>
@@ -378,25 +419,25 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
                       <>
                         <div className="border-t border-border/40" />
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="group rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
-                            <div className="rounded-[calc(0.75rem-1px)] bg-card px-4 py-3.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                              <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">NPV</span>
-                              <div className="mt-1 text-base font-bold tracking-tight">AED {sensitivityResult.adjustedNpv.toLocaleString()}</div>
-                              <div className="mt-0.5 text-[10px] text-muted-foreground/60">Baseline: AED {sensitivityResult.baselineNpv.toLocaleString()}</div>
+                          <div className="group shimmer-border rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
+                            <div className="rounded-[calc(0.75rem-1px)] bg-card px-4 py-3.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)] transition-shadow duration-500 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),inset_0_0_50px_-20px_hsl(var(--primary)/0.12)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_50px_-20px_hsl(var(--primary)/0.15)]">
+                              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">NPV</span>
+                              <div className="mt-1.5 text-lg font-bold leading-none tracking-tight"><span className="text-muted-foreground/60">AED </span><AnimatedValue value={sensitivityResult.adjustedNpv} /></div>
+                              <div className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground/60">Baseline: AED {sensitivityResult.baselineNpv.toLocaleString()}</div>
                             </div>
                           </div>
-                          <div className="group rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
-                            <div className="rounded-[calc(0.75rem-1px)] bg-card px-4 py-3.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                              <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Payback</span>
-                              <div className="mt-1 text-base font-bold tracking-tight">{sensitivityResult.adjustedPayback.toFixed(1)} yrs</div>
-                              <div className="mt-0.5 text-[10px] text-muted-foreground/60">Baseline: {sensitivityResult.baselinePayback.toFixed(1)} yrs</div>
+                          <div className="group shimmer-border rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
+                            <div className="rounded-[calc(0.75rem-1px)] bg-card px-4 py-3.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)] transition-shadow duration-500 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),inset_0_0_50px_-20px_hsl(var(--primary)/0.12)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_50px_-20px_hsl(var(--primary)/0.15)]">
+                              <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Payback</span>
+                              <div className="mt-1.5 text-lg font-bold leading-none tracking-tight"><AnimatedValue value={sensitivityResult.adjustedPayback} decimals={1} suffix=" yrs" /></div>
+                              <div className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground/60">Baseline: {sensitivityResult.baselinePayback.toFixed(1)} yrs</div>
                             </div>
                           </div>
                         </div>
 
                         {/* Tornado Chart */}
                         <div>
-                          <h4 className="mb-3 text-sm font-semibold">Tornado Chart — Variable Impact</h4>
+                          <h4 className="mb-3 text-[15px] font-semibold tracking-tight">Tornado Chart — Variable Impact</h4>
                           <div className="space-y-2">
                             {sensitivityResult.tornadoData.map((item) => {
                               const maxImpact = sensitivityResult.tornadoData[0]!.impact || 1;
@@ -410,9 +451,12 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
                                     </span>
                                   </div>
                                   <div className="h-5 w-full overflow-hidden rounded bg-muted">
-                                    <div
+                                    <motion.div
                                       className="h-full rounded bg-gradient-to-r from-amber-400 to-emerald-400"
-                                      style={{ width: `${Math.max(barWidth, 4)}%` }}
+                                      initial={{ width: "0%" }}
+                                      whileInView={{ width: `${Math.max(barWidth, 4)}%` }}
+                                      viewport={{ once: true }}
+                                      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
                                     />
                                   </div>
                                 </div>
@@ -424,16 +468,16 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
                     )}
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* 3D Viewer */}
-              <div className="group rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
-                <div className="rounded-[calc(0.75rem-1px)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+              <motion.div {...fadeUp(0.3)} className="group shimmer-border rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
+                <div className="rounded-[calc(0.75rem-1px)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)] transition-shadow duration-500 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),inset_0_0_50px_-20px_hsl(var(--primary)/0.12)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_50px_-20px_hsl(var(--primary)/0.15)]">
                   <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5">
                     <div>
-                      <h3 className="text-sm font-semibold">3D Solar Visualization</h3>
-                      <p className="text-[11px] text-muted-foreground">
-                        System: {assessment.systemSizeKwp.toFixed(1)} kWp | Panels: {assessment.panelCount}
+                      <h3 className="text-[15px] font-semibold tracking-tight">3D Solar Visualization</h3>
+                      <p className="mt-0.5 text-[12px] leading-relaxed text-muted-foreground">
+                        System: {assessment.systemSizeKwp.toFixed(1)} kWp &middot; Panels: {assessment.panelCount}
                       </p>
                     </div>
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
@@ -449,22 +493,22 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
                     />
                   </div>
                   <div className="border-t border-border/40 px-5 py-2.5">
-                    <span className="text-[10px] text-muted-foreground/60">
-                      Drag to rotate · Scroll to zoom · Right-drag to pan
+                    <span className="text-[10px] text-muted-foreground/50">
+                      Drag to rotate &middot; Scroll to zoom &middot; Right-drag to pan
                     </span>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </>
           ) : (
-            <div className="group rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-md dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
-              <div className="rounded-[calc(0.75rem-1px)] bg-card px-6 py-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+            <motion.div {...fadeUp(0)} className="group shimmer-border rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:shadow-md dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
+              <div className="rounded-[calc(0.75rem-1px)] bg-card px-6 py-10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)] transition-shadow duration-500 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),inset_0_0_50px_-20px_hsl(var(--primary)/0.12)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_50px_-20px_hsl(var(--primary)/0.15)]">
                 <div className="flex flex-col items-center justify-center gap-4 text-center">
                   <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
                     <Zap className="h-7 w-7 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold">No Assessment Yet</h3>
+                    <h3 className="text-[15px] font-semibold tracking-tight">No Assessment Yet</h3>
                     <p className="mt-1 text-xs text-muted-foreground">
                       Run an assessment to see solar potential for this building.
                     </p>
@@ -483,44 +527,44 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
                   </Button>
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-5">
-          <div className="group rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
-            <div className="rounded-[calc(0.75rem-1px)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+          <motion.div {...fadeUp(0.35)} className="group shimmer-border rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
+            <div className="rounded-[calc(0.75rem-1px)] bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)] transition-shadow duration-500 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),inset_0_0_50px_-20px_hsl(var(--primary)/0.12)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_50px_-20px_hsl(var(--primary)/0.15)]">
               <div className="border-b border-border/40 px-4 py-3">
-                <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Building Info</h3>
+                <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Building Info</h3>
               </div>
-              <div className="divide-y divide-border/40 px-4 py-2">
+              <div className="px-4 py-1">
                 <SidebarRow label="OSM ID" value={building.osmId ?? "N/A"} />
                 <SidebarRow label="Type" value={building.buildingType ?? "Unknown"} />
                 <SidebarRow label="Roof Area" value={building.roofAreaM2 ? `${Math.round(building.roofAreaM2)} m²` : "N/A"} />
                 <SidebarRow label="Height" value={building.heightMeters ? `${building.heightMeters}m` : "N/A"} />
                 {emirateInfo && (
                   <>
-                    <div className="my-1 border-t border-border/20" />
+                    <div className="my-1.5 border-t border-border/20" />
                     <SidebarRow label="Emirate" value={emirateInfo.name} />
                     <SidebarRow label="Utility" value={emirateInfo.utility} />
                     <SidebarRow label="Tariff" value={`${emirateInfo.tariffSlabs[0]?.rate?.toFixed(2) ?? "0.32"} AED/kWh`} />
                     <SidebarRow label="Net Metering" value={emirateInfo.netMetering.replace(/_/g, " ")} />
                   </>
                 )}
-                <div className="my-1 border-t border-border/20" />
+                <div className="my-1.5 border-t border-border/20" />
                 <SidebarRow label="Latitude" value={building.lat.toFixed(5)} />
                 <SidebarRow label="Longitude" value={building.lng.toFixed(5)} />
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {proposal && proposal.status !== "pending" && (
-            <div className="group rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-500/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-md dark:from-amber-500/10 dark:to-transparent dark:ring-white/[0.04]">
-              <div className="rounded-[calc(0.75rem-1px)] bg-card px-4 py-3.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+            <motion.div {...fadeUp(0.45)} className="group shimmer-border rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-500/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:shadow-md dark:from-amber-500/10 dark:to-transparent dark:ring-white/[0.04]">
+              <div className="rounded-[calc(0.75rem-1px)] bg-card px-4 py-3.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)] transition-shadow duration-500 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),inset_0_0_50px_-20px_hsl(var(--primary)/0.12)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_50px_-20px_hsl(var(--primary)/0.15)]">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold">Proposal</p>
+                    <p className="text-[13px] font-semibold">Proposal</p>
                     <p className="text-[11px] text-muted-foreground">
                       Status: <span className="font-medium capitalize text-primary">{proposal.status}</span>
                     </p>
@@ -530,13 +574,13 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
                   </div>
                 </div>
                 <Button
-                  className="mt-3 h-8 w-full rounded-lg text-[11px] font-semibold"
+                  className="mt-3 h-8 w-full rounded-lg text-[11px] font-semibold active:scale-[0.97] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
                   onClick={() => router.push(`/proposals/${proposal.id}`)}
                 >
                   View Proposal
                 </Button>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
@@ -544,17 +588,54 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
   );
 }
 
-function MetricCard({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
+function AnimatedValue({ value, prefix = "", suffix = "", decimals = 0 }: { value: number; prefix?: string; suffix?: string; decimals?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-50px" });
+  const [displayed, setDisplayed] = useState(0);
+
+  useEffect(() => {
+    if (!inView) return;
+    const controls = animate(0, value, {
+      duration: 1.2,
+      ease: [0.16, 1, 0.3, 1],
+      onUpdate: (v) => setDisplayed(v),
+    });
+    return () => controls.stop();
+  }, [inView, value]);
+
   return (
-    <div className="group rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:shadow-md dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
-      <div className="rounded-[calc(0.75rem-1px)] bg-card px-4 py-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+    <span ref={ref}>
+      {prefix}{displayed.toLocaleString(undefined, { maximumFractionDigits: decimals, minimumFractionDigits: decimals })}{suffix}
+    </span>
+  );
+}
+
+function MetricCard({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
+  const numericMatch = value.match(/^(?:AED?\s*)?([\d,]+(?:\.\d+)?)/);
+  const hasPrefix = value.startsWith("AED ");
+  const numericVal = numericMatch ? parseFloat(numericMatch[1]!.replace(/,/g, "")) : null;
+  const rawVal = numericMatch ? value.replace(numericMatch[0], "").trim() : value;
+
+  return (
+    <div className="group shimmer-border rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-xs ring-1 ring-black/[0.02] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:shadow-md dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
+      <div className="rounded-[calc(0.75rem-1px)] bg-card px-4 py-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)] transition-shadow duration-500 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),inset_0_0_50px_-20px_hsl(var(--primary)/0.12)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_50px_-20px_hsl(var(--primary)/0.15)]">
         <div className="mb-1.5 flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 transition-colors group-hover:bg-primary/15 dark:bg-primary/15">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-110 group-hover:rotate-3 group-hover:bg-primary/15 dark:bg-primary/15">
             <Icon className="h-3 w-3 text-primary" />
           </div>
-          <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">{label}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</span>
         </div>
-        <div className="text-sm font-bold tracking-tight">{value}</div>
+        <div className="text-sm font-bold leading-snug tracking-tight">
+          {numericVal !== null ? (
+            hasPrefix ? (
+              <><span className="text-muted-foreground/60">AED </span><AnimatedValue value={numericVal} decimals={value.includes(".") ? 1 : 0} />{rawVal && <> {rawVal}</>}</>
+            ) : (
+              <AnimatedValue value={numericVal} decimals={value.includes(".") ? 1 : 0} suffix={rawVal ? ` ${rawVal}` : ""} />
+            )
+          ) : (
+            value
+          )}
+        </div>
       </div>
     </div>
   );
@@ -563,8 +644,8 @@ function MetricCard({ icon: Icon, label, value }: { icon: React.ComponentType<{ 
 function SidebarRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-2">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-xs font-semibold tabular-nums">{value}</span>
+      <span className="text-[13px] text-muted-foreground">{label}</span>
+      <span className="text-[13px] font-semibold tabular-nums">{value}</span>
     </div>
   );
 }
@@ -593,22 +674,27 @@ function FinancingModelCard({ model }: { model: FinancingModel }) {
   const Icon = config?.icon ?? Building2;
   const gradClass = config?.gradient ?? "from-gray-500/15 via-transparent to-gray-500/5 dark:from-gray-500/10 dark:to-transparent";
   return (
-    <div className={`group rounded-xl bg-gradient-to-br ${gradClass} p-[1px] shadow-xs ring-1 ring-black/[0.02] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:shadow-md dark:ring-white/[0.04]`}>
-      <div className="rounded-[calc(0.75rem-1px)] bg-card px-4 py-3.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+    <div className={`group shimmer-border rounded-xl bg-gradient-to-br ${gradClass} p-[1px] shadow-xs ring-1 ring-black/[0.02] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 hover:shadow-md dark:ring-white/[0.04]`}>
+      <div className="rounded-[calc(0.75rem-1px)] bg-card px-4 py-3.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.18)] transition-shadow duration-500 group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),inset_0_0_50px_-20px_hsl(var(--primary)/0.12)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] dark:group-hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_50px_-20px_hsl(var(--primary)/0.15)]">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/15 dark:bg-primary/15">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-110 group-hover:rotate-3 group-hover:bg-primary/15 dark:bg-primary/15">
               <Icon className="h-3.5 w-3.5 text-primary" />
             </div>
-            <h3 className="text-sm font-semibold">{model.name}</h3>
+            <h3 className="text-[15px] font-semibold tracking-tight">{model.name}</h3>
           </div>
           {model.recommended && (
-            <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary dark:bg-primary/20">
+            <motion.span
+              initial={{ scale: 1 }}
+              animate={{ scale: [1, 1.04, 1] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+              className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary dark:bg-primary/20"
+            >
               Recommended
-            </span>
+            </motion.span>
           )}
         </div>
-        <p className="mb-3 text-[11px] leading-relaxed text-muted-foreground">{model.description}</p>
+        <p className="mb-3 text-[12px] leading-relaxed text-muted-foreground/80">{model.description}</p>
         <div className="space-y-1.5">
           <FinancingRow label="Upfront" value={`AED ${model.upfrontCostAED.toLocaleString()}`} />
           {model.monthlyPaymentAED > 0 && (
@@ -625,8 +711,8 @@ function FinancingModelCard({ model }: { model: FinancingModel }) {
 function FinancingRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div className="flex items-center justify-between border-b border-border/40 pb-1.5 last:border-0 last:pb-0">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className={`text-xs font-semibold tabular-nums ${highlight ? "text-primary" : ""}`}>{value}</span>
+      <span className="text-[13px] text-muted-foreground">{label}</span>
+      <span className={`text-[13px] font-semibold tabular-nums ${highlight ? "text-primary" : ""}`}>{value}</span>
     </div>
   );
 }
@@ -652,8 +738,8 @@ function SliderRow({
   return (
     <div className="group">
       <div className="mb-1.5 flex items-center justify-between">
-        <span className="text-xs font-medium">{label}</span>
-        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold tabular-nums transition-all duration-300 ${
+        <span className="text-[13px] text-muted-foreground">{label}</span>
+        <span className={`inline-flex items-center rounded-md px-2.5 py-0.5 text-[12px] font-semibold tabular-nums leading-none transition-all duration-300 ${
           isCustomized
             ? "bg-primary/10 text-primary"
             : "bg-muted text-muted-foreground"
@@ -668,7 +754,8 @@ function SliderRow({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="premium-range accent-primary"
+        className="premium-range"
+        style={{ '--pct': `${((value - min) / (max - min)) * 100}%` } as React.CSSProperties}
       />
       <div className="mt-1 flex justify-between text-[10px] text-muted-foreground/60">
         <span>{min}{unit}</span>
