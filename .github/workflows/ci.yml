@@ -49,6 +49,13 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Ensure no @ts-ignore or @ts-expect-error
+        run: |
+          if grep -rn "@ts-expect-error\|@ts-ignore\|@ts-nocheck" src/ --include="*.ts" --include="*.tsx"; then
+            echo "❌ TypeScript suppression comments found. Remove them."
+            exit 1
+          fi
+
       - name: Tests
         run: npm run test:run
 
