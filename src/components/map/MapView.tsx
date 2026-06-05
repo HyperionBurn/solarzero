@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useTheme } from "next-themes";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { api } from "@/trpc/react";
@@ -18,13 +19,16 @@ const BUILDING_TYPE_COLORS: Record<string, string> = {
   retail: "#22C55E", commercial: "#8B5CF6", residential: "#14B8A6", unknown: "#94A3B8",
 };
 
-// Free OpenStreetMap tile styles — no API key needed
+// Free CARTO tile styles — no API key needed
 const FREE_STYLES = {
   light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+  dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
   streets: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
 };
 
 export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch = 45, flyTo }: MapViewProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
@@ -48,9 +52,10 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
   useEffect(() => {
     if (!mapContainer.current) return;
 
+    const styleUrl = resolvedTheme === "dark" ? FREE_STYLES.dark : FREE_STYLES.light;
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: FREE_STYLES.light,
+      style: styleUrl,
       center,
       zoom,
       pitch,
@@ -96,9 +101,11 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
       el.addEventListener("mouseenter", () => { el.style.width = "16px"; el.style.height = "16px"; el.style.boxShadow = "0 0 8px rgba(0,0,0,0.5)"; });
       el.addEventListener("mouseleave", () => { el.style.width = "12px"; el.style.height = "12px"; el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.3)"; });
 
+      const textColor = isDark ? "#e2e8f0" : "#0f172a";
+      const mutedColor = isDark ? "#94a3b8" : "#64748b";
       const html = `<div style="font-family:system-ui,sans-serif;padding:4px">
-        <p style="font-weight:600;font-size:13px;margin:0 0 4px;color:#0f172a">${escapeHtml(building.address ?? "Building")}</p>
-        <p style="font-size:12px;color:#64748b;margin:0 0 4px">Type: <span style="color:${color};font-weight:600">${escapeHtml(building.buildingType ?? "Unknown")}</span>${building.roofAreaM2 ? ` &middot; ${Math.round(building.roofAreaM2)} m²` : ""}</p>
+        <p style="font-weight:600;font-size:13px;margin:0 0 4px;color:${textColor}">${escapeHtml(building.address ?? "Building")}</p>
+        <p style="font-size:12px;color:${mutedColor};margin:0 0 4px">Type: <span style="color:${color};font-weight:600">${escapeHtml(building.buildingType ?? "Unknown")}</span>${building.roofAreaM2 ? ` &middot; ${Math.round(building.roofAreaM2)} m²` : ""}</p>
         ${building.assessment ? `<p style="font-size:12px;color:#0d9488;margin:0 0 8px">Assessed: ${building.assessment.systemSizeKwp.toFixed(1)} kWp &middot; ${building.assessment.panelCount} panels</p>` : ""}
         <a href="/buildings/${building.id}" style="display:inline-block;padding:6px 14px;background:#0d9488;color:white;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">Assess this Building</a>
       </div>`;
