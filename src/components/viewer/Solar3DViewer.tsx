@@ -190,11 +190,16 @@ function Scene({ buildingType, roofAreaM2, heightMeters, panelCount, isDark }: S
 
       <OrbitControls
         enableDamping
-        dampingFactor={0.1}
+        dampingFactor={0.08}
+        rotateSpeed={0.6}
+        zoomSpeed={0.8}
+        panSpeed={0.5}
         minDistance={15}
         maxDistance={80}
         maxPolarAngle={Math.PI / 2.1}
         target={[0, bldHeight / 2, 0]}
+        autoRotate
+        autoRotateSpeed={0.35}
       />
       <Environment preset={isDark ? "night" : "sunset"} />
     </>
