@@ -1,14 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import type { inferRouterOutputs } from "@trpc/server";
 import { motion } from "framer-motion";
 import { Target, Search, AlertCircle, RefreshCw, Layers } from "lucide-react";
 import { api } from "@/trpc/react";
+import type { AppRouter } from "@/server/api/root";
 
 import { OpportunityKpis } from "@/components/opportunities/OpportunityKpis";
 import { OpportunityFilters } from "@/components/opportunities/OpportunityFilters";
 import { OpportunityTable } from "@/components/opportunities/OpportunityTable";
 import { Button } from "@/components/ui/button";
+
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+type OpportunityListItem = RouterOutputs["opportunity"]["list"]["opportunities"][number];
 
 export default function OpportunitiesDashboard() {
   const [filters, setFilters] = useState({
@@ -99,7 +104,7 @@ export default function OpportunitiesDashboard() {
   };
 
   // Filter list on client for search parameter to keep UX snappy
-  const opportunities = listData?.opportunities ?? [];
+  const opportunities: OpportunityListItem[] = listData?.opportunities ?? [];
   const filteredOpportunities = opportunities.filter((o) => {
     if (!filters.search) return true;
     return o.building.address.toLowerCase().includes(filters.search.toLowerCase());
