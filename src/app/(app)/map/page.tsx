@@ -45,8 +45,8 @@ export default function MapPage() {
 
   return (
     <div className="relative h-full w-full">
-      <div className="absolute left-4 top-4 z-20">
-        <h1 className="text-2xl font-bold text-white drop-shadow-lg">SolarZero</h1>
+      <div className="absolute left-2 right-2 top-2 z-20 sm:left-4 sm:right-auto sm:top-4">
+        <h1 className="text-lg font-bold text-white drop-shadow-lg sm:text-2xl">SolarZero</h1>
         {discovering && (
           <div className="mt-2 flex items-center gap-2 rounded-md bg-black/60 px-3 py-1.5 text-xs text-white backdrop-blur">
             <Loader2 className="h-3 w-3 animate-spin" />
@@ -69,7 +69,7 @@ export default function MapPage() {
         )}
       </div>
 
-      <div className="absolute left-4 top-24 z-20">
+      <div className="absolute left-2 right-2 top-20 z-20 sm:left-4 sm:right-auto sm:top-24">
         <SearchBar onSelect={handleSearchSelect} />
       </div>
 
