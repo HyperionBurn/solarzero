@@ -14,11 +14,6 @@ interface MapViewProps {
   flyTo?: { lat: number; lng: number; zoom?: number } | null;
 }
 
-const BUILDING_TYPE_COLORS: Record<string, string> = {
-  warehouse: "#F97316", office: "#3B82F6", industrial: "#6B7280",
-  retail: "#22C55E", commercial: "#8B5CF6", residential: "#14B8A6", unknown: "#94A3B8",
-};
-
 // Free CARTO tile styles — no API key needed
 const FREE_STYLES = {
   light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
@@ -100,7 +95,7 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
       activeStyle.current = nextStyle;
       m.setStyle(nextStyle);
     }
-  }, [resolvedTheme, mapLoaded]);
+  }, [resolvedTheme, mapLoaded, isDark]);
 
   // Fly to coordinates when parent triggers navigation
   useEffect(() => {
@@ -124,7 +119,7 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
       neutral: "#94A3B8"
     };
 
-    buildings.forEach((building: any) => {
+    buildings.forEach((building) => {
       const opp = building.opportunity;
       const band = opp?.scoreBand ?? "neutral";
       const score = opp?.scoreTotal ?? 0;

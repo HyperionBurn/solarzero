@@ -302,12 +302,12 @@ export function BuildingMesh({ footprint, width = 30, depth = 20, height = 12, c
 
       <ACUnits width={width} depth={depth} height={height} />
       {isRectangular && <RooftopAccents width={width} depth={depth} height={height} />}
-      {isRectangular && <GroundLevelDetails width={width} depth={depth} height={height} />}
+      {isRectangular && <GroundLevelDetails width={width} depth={depth} />}
     </group>
   );
 }
 
-function GroundLevelDetails({ width, depth, height }: { width: number; depth: number; height: number }) {
+function GroundLevelDetails({ width, depth }: { width: number; depth: number }) {
   const bollardPositions = useMemo(() => {
     const list: [number, number, number][] = [];
     const count = 5;

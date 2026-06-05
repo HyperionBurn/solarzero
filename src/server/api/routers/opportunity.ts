@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { Prisma } from "@prisma/client";
 import { router, publicProcedure, protectedProcedure } from "../trpc";
 import { db } from "@/lib/db";
 import { OpportunityService } from "../../services/opportunity";
@@ -24,7 +25,7 @@ export const opportunityRouter = router({
     .query(async ({ input }) => {
       const { scoreBand, buildingType, status, assessed, minRoofArea, minNpv, limit, offset } = input;
 
-      const where: any = {};
+      const where: Prisma.OpportunityWhereInput = {};
 
       if (scoreBand && scoreBand.length > 0) {
         where.scoreBand = { in: scoreBand };
@@ -35,7 +36,7 @@ export const opportunityRouter = router({
       }
 
       // Filters targeting related Building
-      const buildingWhere: any = {};
+      const buildingWhere: Prisma.BuildingWhereInput = {};
       if (buildingType && buildingType.length > 0) {
         buildingWhere.buildingType = { in: buildingType };
       }
@@ -55,14 +56,16 @@ export const opportunityRouter = router({
       if (minNpv !== undefined) {
         // If filtering by NPV, must have assessment
         buildingWhere.assessment = {
-          isNot: null,
-          npv25yrAed: { gte: minNpv },
+          is: {
+            npv25yrAed: { gte: minNpv },
+          },
         };
       }
 
       if (Object.keys(buildingWhere).length > 0) {
         where.building = buildingWhere;
       }
+
 
       const total = await db.opportunity.count({ where });
 
@@ -172,7 +175,7 @@ export const opportunityRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { lat, lng, radius } = input;
-      const createdBy = (ctx as any).session?.user?.email ?? "system";
+      const createdBy = ctx.session?.user?.email ?? "system";
 
       // Enforce bounds: max radius 2000m (2km)
       if (radius > 2000) {
@@ -244,14 +247,15 @@ export const opportunityRouter = router({
             completedAt: new Date(),
           },
         });
-      } catch (err: any) {
+      } catch (err) {
         // Complete the run with failure status
         console.error("Scan area failure:", err);
+        const errMsg = err instanceof Error ? err.message : "Unknown discovery failure";
         return await db.investigationRun.update({
           where: { id: run.id },
           data: {
             status: "failed",
-            error: err.message || "Unknown discovery failure",
+            error: errMsg,
             completedAt: new Date(),
           },
         });
@@ -288,7 +292,7 @@ export const opportunityRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const { opportunityId, status, source, sourceUrl, confidence, notes, observedAt } = input;
-      const createdBy = (ctx as any).session?.user?.email ?? "system";
+      const createdBy = ctx.session?.user?.email ?? "system";
 
       // Create evidence
       await db.solarizationEvidence.create({
@@ -340,7 +344,7 @@ export const opportunityRouter = router({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const createdBy = (ctx as any).session?.user?.email ?? "system";
+      const createdBy = ctx.session?.user?.email ?? "system";
       return db.opportunityNote.create({
         data: {
           opportunityId: input.opportunityId,

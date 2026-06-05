@@ -7,8 +7,39 @@ import { ChevronRight, Download, Zap, Info, Loader2, CheckSquare, Square } from 
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 
+interface AssessmentData {
+  id: string;
+  systemSizeKwp: number;
+  panelCount: number;
+  annualProduction: number;
+  annualSavingsAed: number;
+  npv25yrAed: number;
+  paybackYears: number;
+}
+
+interface BuildingData {
+  id: string;
+  address: string;
+  lat: number;
+  lng: number;
+  buildingType: string | null;
+  roofAreaM2: number | null;
+  assessment: AssessmentData | null;
+}
+
+interface OpportunityItem {
+  id: string;
+  buildingId: string;
+  scoreBand: string;
+  scoreTotal: number;
+  status: string;
+  nextAction: string;
+  confidence: number;
+  building: BuildingData;
+}
+
 interface OpportunityTableProps {
-  opportunities: any[];
+  opportunities: OpportunityItem[];
   isLoading: boolean;
   refetch: () => void;
   refetchStats: () => void;
@@ -252,7 +283,6 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
                     const isSelected = selectedIds.includes(o.id);
                     const isAssessed = !!o.building.assessment;
                     const sysSize = o.building.assessment?.systemSizeKwp;
-                    const payback = o.building.assessment?.paybackYears;
                     const savings = o.building.assessment?.annualSavingsAed;
 
                     return (

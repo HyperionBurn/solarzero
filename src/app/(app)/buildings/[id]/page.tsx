@@ -171,9 +171,7 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
     ? ` | Tariff: ${emirateInfo.tariffSlabs[0]?.rate?.toFixed(2) ?? "0.32"} AED/kWh (${emirateInfo.utility})`
     : "";
 
-  const springFast = { type: "spring" as const, stiffness: 400, damping: 28 };
   const springGentle = { type: "spring" as const, stiffness: 260, damping: 24 };
-  const springBouncy = { type: "spring" as const, stiffness: 500, damping: 22, bounce: 0.25 };
   const fadeUp = (d: number) => ({ initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: "-80px" }, transition: { ...springGentle, delay: d } });
 
   return (

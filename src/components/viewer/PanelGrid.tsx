@@ -57,8 +57,6 @@ function buildCellTexture(): THREE.CanvasTexture {
     for (let c = 0; c < cellCols; c++) {
       const x = c * cellW;
       const y = r * cellH;
-      const crossX = x + cellW * 0.1;
-      const crossY = y + cellH * 0.5;
       ctx.beginPath();
       ctx.moveTo(x + cellW * 0.15, y + cellH * 0.5);
       ctx.lineTo(x + cellW * 0.85, y + cellH * 0.5);

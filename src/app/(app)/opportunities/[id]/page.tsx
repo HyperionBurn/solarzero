@@ -11,24 +11,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 import {
   ArrowLeft,
-  Calendar,
   Check,
   AlertTriangle,
-  Clock,
   Zap,
   Sun,
   DollarSign,
   TrendingUp,
-  Leaf,
   Loader2,
   Play,
   Download,
   Share2,
   FileCheck,
-  Sparkles,
-  Clipboard,
   FileText,
-  UserCheck,
+  Sparkles,
   PlusCircle,
   X,
   MessageSquare
@@ -49,14 +44,15 @@ const Solar3DViewer = dynamic(
 );
 
 // Helpers
-const getParsedJsonArray = (val: any): string[] => {
+const getParsedJsonArray = (val: unknown): string[] => {
   if (!val) return [];
   if (typeof val === "string") {
     try { return JSON.parse(val); } catch { return [val]; }
   }
-  if (Array.isArray(val)) return val;
+  if (Array.isArray(val)) return val as string[];
   return [];
 };
+
 
 export default function OpportunityDossierPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -140,7 +136,7 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
         await navigator.clipboard.writeText(`${window.location.origin}/p/${result.id}`);
         showToast("Proposal link copied to clipboard!", "success");
       }
-    } catch (err) {
+    } catch {
       showToast("Failed to create share link.", "error");
     } finally {
       setShareLoading(false);
@@ -197,7 +193,7 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
       });
       await refetch();
       showToast(`Workflow status updated to: ${newStatus}`, "success");
-    } catch (err) {
+    } catch {
       showToast("Failed to update workflow status.", "error");
     }
   };
@@ -212,10 +208,11 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
       });
       await refetch();
       showToast(`Lead priority updated to: ${newPriority}`, "success");
-    } catch (err) {
+    } catch {
       showToast("Failed to update lead priority.", "error");
     }
   };
+
 
   if (isLoading) {
     return (
@@ -462,7 +459,7 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
                         <label className="text-[11px] font-semibold text-muted-foreground">Solarization Status</label>
                         <select
                           value={evidenceStatus}
-                          onChange={(e: any) => setEvidenceStatus(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEvidenceStatus(e.target.value as "solar_present" | "solar_absent" | "unknown")}
                           className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2 py-1.5 text-xs outline-none focus:border-teal-500"
                         >
                           <option value="solar_absent">Unsolarized (Absent)</option>
@@ -475,7 +472,7 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
                         <label className="text-[11px] font-semibold text-muted-foreground">Evidence Source</label>
                         <select
                           value={evidenceSource}
-                          onChange={(e: any) => setEvidenceSource(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setEvidenceSource(e.target.value as "manual" | "imported" | "osm" | "vision")}
                           className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2 py-1.5 text-xs outline-none focus:border-teal-500"
                         >
                           <option value="manual">Manual Assessment / Review</option>
@@ -483,6 +480,7 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
                           <option value="osm">OpenStreetMap Tag</option>
                         </select>
                       </div>
+
 
                       <div>
                         <label className="text-[11px] font-semibold text-muted-foreground">Confidence Level ({(evidenceConfidence * 100).toFixed(0)}%)</label>

@@ -25,7 +25,14 @@ export default function OpportunitiesDashboard() {
   const [scanLng, setScanLng] = useState(55.2744);
   const [scanRadius, setScanRadius] = useState(500);
   const [isScanning, setIsScanning] = useState(false);
-  const [scanResult, setScanResult] = useState<any | null>(null);
+
+  interface AreaScanResult {
+    status: string;
+    buildingsFound?: number;
+    opportunitiesCreated?: number;
+    error?: string | null;
+  }
+  const [scanResult, setScanResult] = useState<AreaScanResult | null>(null);
 
   // Queries
   const {
@@ -71,14 +78,20 @@ export default function OpportunitiesDashboard() {
         lng: scanLng,
         radius: scanRadius,
       });
-      setScanResult(result);
+      setScanResult({
+        status: result.status,
+        buildingsFound: result.buildingsFound,
+        opportunitiesCreated: result.opportunitiesCreated,
+        error: result.error,
+      });
       refetchList();
       refetchStats();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Area scan failed:", err);
+      const errMsg = err instanceof Error ? err.message : "Unknown error during geographic scan";
       setScanResult({
         status: "failed",
-        error: err.message || "Unknown error during geographic scan",
+        error: errMsg,
       });
     } finally {
       setIsScanning(false);

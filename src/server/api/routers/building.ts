@@ -17,16 +17,6 @@ function isWithinUAE(lat: number, lng: number): boolean {
   return lat >= UAE_LAT_MIN && lat <= UAE_LAT_MAX && lng >= UAE_LNG_MIN && lng <= UAE_LNG_MAX;
 }
 
-/** Map Dubai area codes to human-readable names using lat/lng zone boundaries */
-function getDubaiAreaName(lat: number, lng: number): string {
-  if (lat >= 24.97 && lat <= 25.05 && lng >= 55.04 && lng <= 55.15) return "Jebel Ali";
-  if (lat >= 25.18 && lat <= 25.25 && lng >= 55.27 && lng <= 55.33) return "Dubai Mall";
-  if (lat >= 25.03 && lat <= 25.09 && lng >= 55.15 && lng <= 55.21) return "Dubai Investments Park";
-  if (lat >= 25.20 && lat <= 25.28 && lng >= 55.32 && lng <= 55.42) return "Al Quoz";
-  if (lat >= 25.10 && lat <= 25.18 && lng >= 55.33 && lng <= 55.45) return "Al Barsha";
-  if (lat >= 25.08 && lat <= 25.16 && lng >= 55.15 && lng <= 55.27) return "Dubai Silicon Oasis";
-  return "Dubai";
-}
 
 export const buildingRouter = router({
   /**
@@ -206,11 +196,22 @@ export const buildingRouter = router({
               panelCount: true,
             },
           },
+          opportunity: {
+            select: {
+              id: true,
+              scoreTotal: true,
+              scoreBand: true,
+              nextAction: true,
+              reasonsJson: true,
+              risksJson: true,
+            },
+          },
         },
       });
 
       return buildings;
     }),
+
 
   /**
    * Get emirate regulatory config for given coordinates.
