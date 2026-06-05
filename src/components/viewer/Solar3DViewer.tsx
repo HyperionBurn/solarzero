@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls } from "@react-three/drei";
@@ -78,6 +78,41 @@ function SolarPanelRoof({ panelCount, dims, buildingHeight }: { panelCount: numb
         tiltDeg={24}
       />
     </group>
+  );
+}
+
+function Sun({ isDark }: { isDark: boolean }) {
+  const sunTex = useMemo(() => {
+    const size = 256;
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const ctx = c.getContext("2d")!;
+    const cx = size / 2;
+    const cy = size / 2;
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, size / 2);
+    grad.addColorStop(0, "rgba(255, 250, 220, 1)");
+    grad.addColorStop(0.15, "rgba(255, 220, 100, 0.95)");
+    grad.addColorStop(0.4, "rgba(255, 180, 60, 0.6)");
+    grad.addColorStop(0.7, "rgba(255, 140, 30, 0.2)");
+    grad.addColorStop(1, "rgba(255, 120, 0, 0)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, []);
+  if (isDark) return null;
+  return (
+    <sprite position={[60, 80, -80]} scale={[20, 20, 1]}>
+      <spriteMaterial
+        map={sunTex}
+        transparent
+        depthWrite={false}
+        depthTest={false}
+        fog={false}
+        toneMapped={false}
+      />
+    </sprite>
   );
 }
 
@@ -181,6 +216,7 @@ function Scene({ buildingType, roofAreaM2, heightMeters, panelCount, isDark }: S
       <directionalLight position={[-30, 25, -20]} intensity={0.3 * envIntensity} color={isDark ? "#7dd3fc" : "#fef3c7"} />
 
       <SkyDome isDark={isDark} />
+      <Sun isDark={isDark} />
 
       <BuildingMesh height={bldHeight} width={dims.width} depth={dims.depth} color={BUILDING_TYPE_COLORS_3D[buildingType] ?? BUILDING_TYPE_COLORS_3D.unknown} />
 
