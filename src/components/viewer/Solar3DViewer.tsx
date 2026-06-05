@@ -381,6 +381,98 @@ function SceneContext({ dims, isDark }: { dims: { width: number; depth: number }
 
       <Vehicle position={[fenceRadius + 6, 0, 6]} rotation={0} color="#1e40af" isDark={isDark} />
       <Vehicle position={[fenceRadius + 6, 0, -6]} rotation={0} color="#dc2626" isDark={isDark} />
+
+      <Person position={[dims.width * 0.25, 0, dims.depth * 0.4 + 2.2]} rotation={Math.PI * 0.1} shirtColor="#0d9488" />
+      <Person position={[dims.width * 0.32, 0, dims.depth * 0.4 + 1.8]} rotation={Math.PI * 0.6} shirtColor="#7c3aed" />
+
+      <Flag position={[fenceRadius + 2, 0, 0]} isDark={isDark} />
+    </group>
+  );
+}
+
+function Person({ position, rotation, shirtColor }: { position: [number, number, number]; rotation: number; shirtColor: string }) {
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      <mesh position={[0, 0.05, 0]} castShadow>
+        <cylinderGeometry args={[0.18, 0.18, 0.1, 12]} />
+        <meshStandardMaterial color="#0f172a" roughness={0.9} metalness={0.1} />
+      </mesh>
+      <mesh position={[0, 0.7, 0]} castShadow>
+        <capsuleGeometry args={[0.18, 0.6, 4, 12]} />
+        <meshStandardMaterial color={shirtColor} roughness={0.85} metalness={0.05} />
+      </mesh>
+      <mesh position={[0, 1.45, 0]} castShadow>
+        <sphereGeometry args={[0.15, 12, 10]} />
+        <meshStandardMaterial color="#fbbf24" roughness={0.85} metalness={0.05} />
+      </mesh>
+      <mesh position={[0, 1.15, 0.18]} castShadow>
+        <cylinderGeometry args={[0.04, 0.04, 0.5, 6]} />
+        <meshStandardMaterial color={shirtColor} roughness={0.85} metalness={0.05} />
+      </mesh>
+      <mesh position={[0, 0.4, 0.08]} castShadow>
+        <cylinderGeometry args={[0.07, 0.06, 0.7, 8]} />
+        <meshStandardMaterial color="#1e3a8a" roughness={0.9} metalness={0.05} />
+      </mesh>
+      <mesh position={[0, 0.4, -0.08]} castShadow>
+        <cylinderGeometry args={[0.07, 0.06, 0.7, 8]} />
+        <meshStandardMaterial color="#1e3a8a" roughness={0.9} metalness={0.05} />
+      </mesh>
+    </group>
+  );
+}
+
+function Flag({ position, isDark }: { position: [number, number, number]; isDark: boolean }) {
+  const flagTex = useMemo(() => {
+    const w = 512;
+    const h = 256;
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext("2d")!;
+    const grad = ctx.createLinearGradient(0, 0, w, 0);
+    grad.addColorStop(0, "#0d9488");
+    grad.addColorStop(1, "#14b8a6");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 70px system-ui";
+    ctx.textBaseline = "middle";
+    ctx.fillText("SOLAR", 40, h / 2 - 28);
+    ctx.fillStyle = "#facc15";
+    ctx.font = "bold 50px system-ui";
+    ctx.fillText("ZERO", 40, h / 2 + 36);
+    ctx.fillStyle = "#facc15";
+    ctx.beginPath();
+    ctx.arc(w - 60, h / 2, 24, 0, Math.PI * 2);
+    ctx.fill();
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      ctx.strokeStyle = "#0d9488";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(w - 60 + Math.cos(angle) * 26, h / 2 + Math.sin(angle) * 26);
+      ctx.lineTo(w - 60 + Math.cos(angle) * 40, h / 2 + Math.sin(angle) * 40);
+      ctx.stroke();
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;
+    return t;
+  }, []);
+  return (
+    <group position={position}>
+      <mesh position={[0, 4, 0]} castShadow>
+        <cylinderGeometry args={[0.1, 0.12, 8, 12]} />
+        <meshStandardMaterial color={isDark ? "#9ca3af" : "#cbd5e1"} roughness={0.4} metalness={0.85} />
+      </mesh>
+      <mesh position={[0, 7.8, 0]} castShadow>
+        <sphereGeometry args={[0.14, 12, 8]} />
+        <meshStandardMaterial color="#facc15" emissive="#facc15" emissiveIntensity={0.4} roughness={0.4} metalness={0.7} />
+      </mesh>
+      <mesh position={[0.9, 7.2, 0]} castShadow>
+        <planeGeometry args={[1.8, 1.0]} />
+        <meshStandardMaterial map={flagTex} side={THREE.DoubleSide} roughness={0.7} metalness={0.2} />
+      </mesh>
     </group>
   );
 }
