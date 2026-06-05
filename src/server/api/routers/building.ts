@@ -3,8 +3,10 @@ import { publicProcedure, protectedProcedure, router } from "../trpc";
 import { db } from "@/lib/db";
 import { queryBuildingsAround } from "@/lib/osm/client";
 import type { OSMResponse } from "@/lib/osm/client";
-import { parseOSMBuilding, parseOSMBuildings } from "@/lib/osm/parser";
+import { parseOSMBuilding } from "@/lib/osm/parser";
 import { getEmirateConfig } from "@/lib/regulatory/emirates";
+import { BuildingDiscoveryService } from "../../services/buildingDiscovery";
+
 
 const UAE_LAT_MIN = 22.5;
 const UAE_LAT_MAX = 26.5;
@@ -164,59 +166,10 @@ export const buildingRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
-      const { lat, lng } = input;
-
-      if (!isWithinUAE(lat, lng)) {
-        throw new Error(
-          `Coordinates (${lat}, ${lng}) are outside UAE bounds. SolarZero supports UAE locations only.`,
-        );
-      }
-
-      const osmData: OSMResponse = await queryBuildingsAround(input.lat, input.lng, input.radius);
-      const parsed = parseOSMBuildings(osmData);
-
-      if (parsed.length === 0) return [];
-
-      // Batch fetch existing buildings by osmId to avoid N+1
-      const osmIds = parsed.map((b) => b.osmId);
-      const existingBuildings = await db.building.findMany({
-        where: { osmId: { in: osmIds } },
-      });
-      const existingByOsmId = new Map(existingBuildings.map((b) => [b.osmId, b]));
-
-      const results = [];
-      const toCreate: typeof parsed = [];
-      for (const b of parsed) {
-        const existing = existingByOsmId.get(b.osmId);
-        if (existing) {
-          results.push(existing);
-        } else {
-          toCreate.push(b);
-        }
-      }
-
-      for (const b of toCreate) {
-        const typeLabel = b.buildingType && b.buildingType !== "unknown" && b.buildingType !== "roof"
-          ? b.buildingType.charAt(0).toUpperCase() + b.buildingType.slice(1)
-          : "Commercial";
-        const emirate = getEmirateConfig(b.lat, b.lng);
-        const address = `${typeLabel} Building in ${getDubaiAreaName(b.lat, b.lng)}, ${emirate.name}`;
-        const created = await db.building.create({
-          data: {
-            osmId: b.osmId,
-            osmType: b.osmType,
-            address,
-            lat: b.lat,
-            lng: b.lng,
-            roofAreaM2: b.roofAreaM2,
-            buildingType: b.buildingType,
-            heightMeters: b.heightMeters ?? null,
-          },
-        });
-        results.push(created);
-      }
-      return results;
+      const { lat, lng, radius } = input;
+      return BuildingDiscoveryService.discoverArea(lat, lng, radius);
     }),
+
 
   /**
    * List buildings within a geographic bounding box.
