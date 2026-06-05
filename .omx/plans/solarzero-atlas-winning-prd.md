@@ -995,6 +995,325 @@ Mitigation:
 - Run assessment on one known building.
 - Confirm no 500s in Vercel logs.
 
+## SolarZero SignalGraph And Data Connector Strategy
+
+### Strategic Decision
+
+SolarZero Atlas should not become a pile of one-off API calls. It should become a connector-based intelligence system where every external signal is stored with source, license, timestamp, confidence, and scoring impact.
+
+Working name:
+
+> SolarZero SignalGraph
+
+Pitch line:
+
+> SolarZero SignalGraph fuses open building footprints, satellite imagery, solar-resource models, UAE tariffs, regulation, dust data, and financing assumptions into confidence-scored solar opportunity intelligence.
+
+This is the technical layer that turns Atlas from "solar calculator with a map" into an evidence-backed UAE solar intelligence platform.
+
+### Why This Matters
+
+The opportunity score becomes defensible only when the product can say why it believes something:
+
+```text
+A-grade opportunity because OSM, Microsoft, and Overture footprint sources agree on a large roof;
+NASA POWER, PVGIS, and CAMS show strong solar resource;
+DEWA tariff/regulatory path is known;
+and no high-confidence solarization evidence exists.
+```
+
+Every dossier should show:
+
+- Which connector produced the signal.
+- Whether the source is free, open, free-tier, paid, or commercial-use restricted.
+- When the source was observed and fetched.
+- How confident Atlas is.
+- Whether the signal changed the score.
+
+### MVP Signal Model
+
+Add this abstraction before building many external integrations:
+
+```ts
+type ConnectorSignal = {
+  connectorId: string;
+  entityType: "BUILDING" | "OPPORTUNITY" | "ASSESSMENT";
+  entityId: string;
+  signalType:
+    | "BUILDING_FOOTPRINT"
+    | "ROOF_AREA"
+    | "BUILDING_TYPE"
+    | "OCCUPANCY_HINT"
+    | "SOLAR_RESOURCE"
+    | "WEATHER"
+    | "DUST_SOILING"
+    | "TARIFF"
+    | "REGULATORY_RULE"
+    | "CONTRACTOR"
+    | "EQUIPMENT"
+    | "COMPANY"
+    | "FINANCING"
+    | "CARBON"
+    | "SATELLITE_IMAGE"
+    | "SOLARIZATION_EVIDENCE"
+    | "BILL_USAGE";
+  sourceName: string;
+  sourceUrl?: string;
+  license?: string;
+  confidence: number;
+  observedAt?: Date;
+  fetchedAt: Date;
+  payloadJson: unknown;
+};
+```
+
+### Suggested SignalGraph Tables
+
+Add these after the core `Opportunity` models, or include them in Milestone 1 if the executor can keep scope controlled:
+
+```prisma
+model DataConnector {
+  id             String   @id
+  name           String
+  category       String
+  baseUrl        String?
+  license        String?
+  accessModel    String   @default("unknown")
+  refreshCadence String
+  enabled        Boolean  @default(true)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ConnectorRun {
+  id            String    @id @default(cuid())
+  connectorId   String
+  status        String
+  inputJson     Json?
+  outputCount   Int       @default(0)
+  error         String?
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  @@index([connectorId, startedAt])
+  @@index([status])
+}
+
+model ConnectorSignal {
+  id            String   @id @default(cuid())
+  connectorId   String
+  entityType    String
+  entityId      String
+  buildingId    String?
+  opportunityId String?
+  signalType    String
+  sourceName    String
+  sourceUrl     String?
+  license       String?
+  confidence    Float
+  payloadJson   Json
+  observedAt    DateTime?
+  fetchedAt     DateTime @default(now())
+
+  @@index([buildingId])
+  @@index([opportunityId])
+  @@index([entityType, entityId])
+  @@index([signalType])
+  @@index([connectorId, fetchedAt])
+}
+```
+
+### Access Model Legend
+
+Use these categories in `DataConnector.accessModel`:
+
+- `free_open`: Free/open data suitable for commercial use with attribution/license compliance.
+- `free_restricted`: Free but license requires caution, share-alike, attribution, or other obligations.
+- `free_tier`: Free tier exists, but production/commercial use may require paid plan.
+- `paid`: Paid API or commercial license expected.
+- `manual`: Human-entered or user-uploaded data.
+- `future_research`: Useful later but too heavy, uncertain, or risky for MVP.
+
+### Connector Priority Matrix
+
+| Priority | Connector / Tool | Access Model | MVP Use | Notes |
+|---|---|---:|---|---|
+| P0 | OpenStreetMap / Overpass | `free_restricted` | Building discovery, tags, amenities, land use, existing app support | Already used. Respect OSM/ODbL attribution and rate limits. |
+| P0 | Microsoft Global ML Building Footprints | `free_open` | Secondary footprint and roof-area cross-check | Microsoft states 1.4B buildings under CDLA Permissive 2.0. Strong commercial-friendly source. |
+| P0 | NASA POWER API | `free_open` | Solar/weather baseline: radiation, temperature, wind, humidity | Good free baseline. Avoid hammering same grid cells. Cache aggressively. |
+| P0 | PVGIS API | `free_open` | Independent PV yield and solar-resource validation | Use as second opinion and sanity check, not sole truth. |
+| P0 | DEWA Shams Dubai pages / PDFs | `free_open` | Dubai regulatory pathway, contractor/equipment source links, Shams notes | Source official rules and disclaimers. Store fetched date and source URL. |
+| P0 | ADDC tariff pages/PDFs | `free_open` | Abu Dhabi tariff source records | Use official tariff tables and version them. |
+| P0 | Manual solarization evidence | `manual` | Human review loop for has-solar / no-solar / unknown | Critical because CV is not MVP-ready. |
+| P0 | Existing Solcast integration | `paid_or_keyed` | Existing production irradiance path if env is configured | Keep current engine behavior. Add source/cost metadata later. |
+| P1 | Overture Maps Buildings | `free_restricted` | Footprint/places/address intelligence at scale | Useful, but buildings theme is ODbL. Add license/attribution handling before production usage. |
+| P1 | CAMS Solar Radiation | `free_open` | GHI/DHI/DNI/BNI historical validation for UAE/Middle East | Very strong for confidence scoring. More complex than NASA/PVGIS. |
+| P1 | Supabase PostGIS | `free_tier_or_paid_hosted` | Spatial indexing, radius/bbox, future geometry joins | Enable via Supabase/Postgres extension when moving beyond lat/lng queries. |
+| P1 | DuckDB Spatial | `free_open` | Offline/batch geospatial scoring over GeoParquet/GeoJSON | Great for imports and local analytics. Not runtime dependency at first. |
+| P1 | GDAL / ogr2ogr | `free_open` | Convert, clip, repair, reproject geospatial data | CLI workhorse for ingestion pipeline. |
+| P1 | MapLibre GL JS | `free_open` | Existing/open map rendering layer | Already used. Keep avoiding unnecessary Mapbox lock-in. |
+| P1 | pdfplumber | `free_open` | Machine-readable DEWA/ADDC bill extraction | Bill-aware ROI makes Atlas much more credible. |
+| P1 | Tesseract / Tesseract.js | `free_open` | OCR for scanned bill screenshots/PDFs | Use only after bill parser UX exists. |
+| P1 | Open-Meteo Air Quality | `free_tier` | Dust/AOD/PM soiling proxy in prototype | Free API is non-commercial; paid plan needed for commercial production. |
+| P1 | OpenAQ | `free_open` | PM10/PM2.5 air-quality soiling proxy | Good secondary dust/air-quality source. Validate UAE station coverage. |
+| P2 | MoIAT Industrial Licenses API | `free_open` | Industrial company/license enrichment | Official API exists. Treat as company signal, not property ownership proof. |
+| P2 | UAE National Economic Register | `free_open_or_manual` | Business license lookup workflow | Verify API/usage path before automating. |
+| P2 | Invest Dubai license search | `free_open_or_manual` | Dubai company lookup workflow | Likely better as manual/semi-automated enrichment first. |
+| P2 | Copernicus Sentinel-2 / Data Space | `free_open` | Broad satellite context and experimental solarization evidence | Resolution usually insufficient for precise rooftop panel detection. Use evidence/confidence only. |
+| P2 | Segment Anything / Grounding DINO | `free_open` | Experimental assisted segmentation / labeling | Do not ship as definitive solar detection. Manual review required. |
+| P2 | PySAM | `free_open` | Advanced performance/finance modeling | Add once scoring/dashboard are working. |
+| P2 | PVWatts | `free_tier_or_keyed` | Benchmark/simple PV model | Useful sanity check, not UAE-specific moat. |
+| P3 | OpenDSS | `free_open` | Distribution-grid impact studies | Too heavy for MVP. Future engineering module. |
+| P3 | pandapower | `free_open` | Power-flow/network studies | Future technical module only. |
+| P3 | Airbyte / Meltano / Singer | `free_open_or_paid` | Scaled connector orchestration | Too much platform before product-market proof. |
+| P3 | n8n | `free_open_or_paid` | Internal workflow automation | Keep private if used. Do not expose casually. |
+| P3 | Firecrawl / Crawlee | `free_open_or_paid` | Regulatory/competitor page monitoring | Useful after core data model exists. |
+| P3 | OpenCorporates / commercial company APIs | `paid_or_limited_free` | Contact/company enrichment | Licensing and resale terms must be reviewed. |
+| Avoid for now | Ultralytics YOLO open-source path | `commercial_license_risk` | Solar panel detection only if enterprise license is handled | AGPL can be awkward for SaaS/commercial products. Prefer custom/licensed model path. |
+
+### Free / Open Sources To Build First
+
+These should be safe first targets if attribution/license handling is implemented:
+
+- Microsoft Global ML Building Footprints for footprint cross-checks.
+- NASA POWER for solar/weather baseline.
+- PVGIS for PV yield/resource validation.
+- CAMS Solar Radiation after the basic NASA/PVGIS consensus works.
+- DEWA Shams Dubai public pages/PDFs for official regulatory/equipment/contractor source records.
+- ADDC tariff pages/PDFs for Abu Dhabi tariff records.
+- GDAL, DuckDB Spatial, GeoPandas, and QGIS for ingestion and QA.
+- MapLibre GL JS for frontend map rendering.
+- pdfplumber and Tesseract for bill parsing.
+- MoIAT Industrial Licenses API for industrial/company signals after P0.
+- Copernicus Sentinel-2 for broad imagery context after P0.
+
+### Free-Tier Or Commercial-Caution Sources
+
+Use these only with explicit access-model tracking:
+
+- OSM/Overpass: free/open but ODbL obligations and fair-use/rate-limit concerns apply.
+- Overture Maps Buildings: free/open, but buildings theme is ODbL. Good source, but not "no strings."
+- Open-Meteo: free API is non-commercial; production/commercial use requires paid subscription.
+- Supabase PostGIS: extension is available, but hosting tier/storage/compute may be paid as usage grows.
+- PVWatts/NREL APIs: useful benchmarks, but confirm API key/rate limits before production.
+- Solcast: already integrated as keyed/paid-style irradiance source. Keep fallback behavior.
+- OpenCorporates and commercial company/contact sources: verify license and resale/CRM usage before ingesting.
+
+### Data Sources To Delay
+
+Delay these until the opportunity dashboard, scoring, evidence, and basic source consensus are already working:
+
+- Segment Anything, Grounding DINO, and custom solar-panel CV.
+- Sentinel-2 solarization detection beyond broad context.
+- PySAM detailed finance modeling.
+- OpenDSS and pandapower grid studies.
+- Airbyte/Meltano/n8n connector orchestration.
+- Firecrawl/Crawlee regulatory crawlers.
+- Routing tools like OSRM/Valhalla for site-visit planning.
+
+### Killer Features Enabled By SignalGraph
+
+#### Multi-Source Roof Confidence
+
+```text
+OSM footprint: 3,920 m2
+Microsoft footprint: 4,050 m2
+Overture footprint: 3,870 m2
+Consensus roof area: 3,947 m2
+Confidence: 0.88
+```
+
+Use this to make roof area less fragile than a single OSM number.
+
+#### Irradiance Consensus
+
+```text
+NASA POWER annual solar resource
+PVGIS annual PV yield estimate
+CAMS GHI/DNI validation
+Current Solcast result if configured
+```
+
+Output:
+
+> Solar resource confidence: high. Independent sources agree within 6.4%.
+
+#### UAE Regulatory Pathway Engine
+
+```text
+Dubai -> DEWA / Shams Dubai / D33 notes
+Abu Dhabi -> ADDC / DoE self-supply notes
+Northern Emirates -> EtihadWE / local rules
+RAK -> RAK distributed renewables context
+```
+
+This is one of the strongest UAE-specific moats.
+
+#### Bill-Aware ROI
+
+```text
+Upload bill
+Extract kWh / tariff / account class
+Apply correct slab/fuel surcharge assumptions
+Compare bill profile against estimated PV generation
+```
+
+This is more credible than roof-only ROI because DEWA's own FAQ notes system size and savings depend on electricity use, roof size, and investment.
+
+#### Dust-Adjusted Production
+
+```text
+Base production: 820,000 kWh/year
+Dust/soiling risk: high
+Recommended loss range: 3-8%
+Cleaning review: recommended
+```
+
+This is a UAE-native differentiator that generic calculators usually miss.
+
+#### Contractor-Ready Dossier
+
+```text
+Site facts
+Opportunity score
+Source evidence
+Regulatory pathway
+Suggested system size
+Savings range
+Financing options
+Contractor/equipment source notes
+Confidence warnings
+```
+
+This should be the real output of SolarZero Atlas.
+
+### Connector Implementation Order
+
+Do not build every connector at once. Use this order:
+
+1. Add `DataConnector`, `ConnectorRun`, and `ConnectorSignal`.
+2. Wrap existing OSM/Solcast/UAE-model results as connector signals.
+3. Add Microsoft footprint import for UAE bounding boxes.
+4. Add NASA POWER connector.
+5. Add PVGIS connector.
+6. Store DEWA/ADDC tariff and regulatory source records manually or via controlled scraper/import.
+7. Update opportunity scoring to use source consensus and confidence.
+8. Add Overture Maps only after ODbL attribution/license handling is explicit.
+9. Add bill parsing with pdfplumber/Tesseract.
+10. Add CAMS and dust/soiling.
+11. Add MoIAT/company enrichment.
+12. Add satellite/CV solarization experiments with manual review gates.
+
+### Acceptance Criteria For SignalGraph
+
+- Every external data point used in opportunity scoring has a stored `ConnectorSignal`.
+- Every connector record includes access model, license notes, and refresh cadence.
+- Opportunity dossier shows source/confidence for roof area, solar resource, tariff, regulatory notes, and solarization evidence.
+- Opportunity scoring can be recomputed from stored signals.
+- If a source is missing or stale, the score confidence drops instead of silently pretending certainty.
+- No commercial-restricted/free-tier source is used in production without an explicit access-model note.
+
 ## Handoff Prompt For Execution AI
 
 Use this prompt to offload implementation:
@@ -1091,3 +1410,4 @@ Team verification path:
 - Created initial PRD for SolarZero Atlas opportunity intelligence pivot.
 - Grounded plan in current repo files, commit trajectory, and current UAE/competitor market evidence.
 - Added execution handoff prompt, ADR, scoring model, schema proposal, frontend/backend milestones, and verification gates.
+- Added SolarZero SignalGraph connector strategy with free/open/free-tier/paid source prioritization.
