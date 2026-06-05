@@ -14,11 +14,44 @@ const nextConfig: NextConfig = {
         hostname: "tiles.maplibre.org",
       },
     ],
+    deviceSizes: [640, 750, 1080, 1920],
+    imageSizes: [16, 32, 48, 96, 128, 256],
+    formats: ["image/webp"],
   },
   experimental: {
     serverActions: {
       bodySizeLimit: "5mb",
     },
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*.(svg|png|jpg|jpeg|gif|webp|woff2|woff|css|js)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+        ],
+      },
+    ];
   },
 };
 

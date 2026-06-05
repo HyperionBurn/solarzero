@@ -1,18 +1,29 @@
 import { logger } from "./logger";
 import { optionalEnvValue } from "./env";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let redisInstance: any = null;
+interface RedisLike {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string | number | Buffer): Promise<"OK">;
+  setex(key: string, seconds: number, value: string | number | Buffer): Promise<"OK">;
+  del(...keys: string[]): Promise<number>;
+  ping(): Promise<string>;
+  on(event: string, handler: (...args: unknown[]) => void): void;
+  quit(): Promise<"OK">;
+  disconnect(): void;
+  status: string;
+}
 
-function createMockRedis() {
+let redisInstance: RedisLike;
+
+function createMockRedis(): RedisLike {
   return {
     get: () => Promise.resolve(null),
-    set: () => Promise.resolve("OK"),
-    setex: () => Promise.resolve("OK"),
+    set: () => Promise.resolve("OK" as const),
+    setex: () => Promise.resolve("OK" as const),
     del: () => Promise.resolve(0),
     ping: () => Promise.resolve("PONG"),
     on: () => {},
-    quit: () => Promise.resolve("OK"),
+    quit: () => Promise.resolve("OK" as const),
     disconnect: () => {},
     status: "end",
   };

@@ -12,6 +12,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://tiles.maplibre.org" />
+        <link rel="preconnect" href="https://jlqgkxyjtqxeyzhrdyax.supabase.co" />
+        <link rel="dns-prefetch" href="https://tiles.maplibre.org" />
+        <link rel="dns-prefetch" href="https://jlqgkxyjtqxeyzhrdyax.supabase.co" />
+      </head>
       <body className="h-full antialiased font-sans">
         <ThemeProvider>
           <SessionProvider>

@@ -1,4 +1,5 @@
 import { Ratelimit } from "@upstash/ratelimit";
+import type { RatelimitConfig } from "@upstash/ratelimit";
 import { redis, redisIsMock } from "./redis";
 
 type RateLimitResponse = {
@@ -17,7 +18,7 @@ function createRateLimit(prefix: string, requests: number) {
   if (redisIsMock) return noopRateLimit;
 
   return new Ratelimit({
-    redis,
+    redis: redis as unknown as RatelimitConfig["redis"],
     limiter: Ratelimit.slidingWindow(requests, "60 s"),
     analytics: true,
     prefix,
