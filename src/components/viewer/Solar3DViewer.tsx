@@ -4,9 +4,11 @@ import { Suspense } from "react";
 import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls } from "@react-three/drei";
+import { useTheme } from "next-themes";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { BuildingMesh } from "./BuildingMesh";
 import { PanelGrid } from "./PanelGrid";
+import { Loader2 } from "lucide-react";
 
 interface Solar3DViewerProps {
   buildingType: string;
@@ -15,17 +17,29 @@ interface Solar3DViewerProps {
   panelCount: number;
 }
 
+function CanvasLoader() {
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-muted">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
 export function Solar3DViewer(props: Solar3DViewerProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  const bgColor = isDark ? "#0f172a" : "#f8fafc";
+
   return (
     <ErrorBoundary>
       <Canvas
         shadows
         camera={{ position: [40, 20, 40], fov: 45 }}
-        style={{ background: "#f8fafc" }}
+        style={{ background: bgColor }}
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
       >
         <Suspense fallback={null}>
-          <Scene {...props} />
+          <Scene {...props} isDark={isDark} />
         </Suspense>
       </Canvas>
     </ErrorBoundary>
@@ -67,21 +81,23 @@ function SolarPanelRoof({ panelCount, dims, buildingHeight }: { panelCount: numb
   );
 }
 
-function Scene({ buildingType, roofAreaM2, heightMeters, panelCount }: Solar3DViewerProps) {
+function Scene({ buildingType, roofAreaM2, heightMeters, panelCount, isDark }: Solar3DViewerProps & { isDark: boolean }) {
   const dims = getFootprintDims(buildingType, roofAreaM2);
   const bldHeight = heightMeters || 12;
+  const groundColor = isDark ? "#1e293b" : "#f1f5f9";
+  const envIntensity = isDark ? 0.6 : 1;
 
   return (
     <>
       <directionalLight
         position={[40, 60, 30]}
-        intensity={1.5}
+        intensity={1.5 * envIntensity}
         castShadow
         shadow-mapSize-width={1024}
         shadow-mapSize-height={1024}
       />
-      <ambientLight intensity={0.5} />
-      <hemisphereLight args={["#87CEEB", "#362907", 0.3]} />
+      <ambientLight intensity={0.5 * envIntensity} />
+      <hemisphereLight args={["#87CEEB", "#362907", 0.3 * envIntensity]} />
 
       <BuildingMesh height={bldHeight} width={dims.width} depth={dims.depth} color={BUILDING_TYPE_COLORS_3D[buildingType] ?? BUILDING_TYPE_COLORS_3D.unknown} />
 
@@ -89,7 +105,7 @@ function Scene({ buildingType, roofAreaM2, heightMeters, panelCount }: Solar3DVi
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <planeGeometry args={[100, 100]} />
-        <meshStandardMaterial color="#f1f5f9" roughness={0.9} />
+        <meshStandardMaterial color={groundColor} roughness={0.9} />
       </mesh>
 
       <OrbitControls
