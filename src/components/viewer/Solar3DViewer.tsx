@@ -70,7 +70,7 @@ function getFootprintDims(buildingType: string, roofAreaM2: number): { width: nu
 
 function SolarPanelRoof({ panelCount, dims, buildingHeight }: { panelCount: number; dims: { width: number; depth: number }; buildingHeight: number }) {
   return (
-    <group position={[0, buildingHeight + 0.02, 0]}>
+    <group position={[0, buildingHeight + 0.02, 0]} rotation={[0, Math.PI, 0]}>
       <PanelGrid
         panelCount={panelCount}
         roofWidth={dims.width * 0.85}
