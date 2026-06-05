@@ -102,7 +102,8 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
         await navigator.clipboard.writeText(`${window.location.origin}/p/${result.id}`);
         showToast("Proposal link copied to clipboard!", "success");
       }
-    } catch {
+    } catch (err) {
+      console.error("Share proposal failed:", err);
       showToast("Failed to create share link. Please try again.", "error");
     } finally {
       setShareLoading(false);

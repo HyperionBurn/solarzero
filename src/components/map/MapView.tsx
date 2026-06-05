@@ -60,10 +60,10 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
 
     map.current.on("load", () => {
       const m = map.current!;
-      // Enable 3D building extrusion if supported
-      try { m.setPaintProperty("building", "fill-extrusion-height", ["get", "render_height"]); } catch {}
-      try { m.setPaintProperty("building", "fill-extrusion-color", "#cbd5e1"); } catch {}
-      try { m.setPaintProperty("building", "fill-extrusion-opacity", 0.6); } catch {}
+      // Enable 3D building extrusion if supported (gracefully degrade if map style lacks layer)
+      try { m.setPaintProperty("building", "fill-extrusion-height", ["get", "render_height"]); } catch { /* layer may not exist in free tile style */ }
+      try { m.setPaintProperty("building", "fill-extrusion-color", "#cbd5e1"); } catch { /* layer may not exist in free tile style */ }
+      try { m.setPaintProperty("building", "fill-extrusion-opacity", 0.6); } catch { /* layer may not exist in free tile style */ }
       setLoading(false);
       setMapLoaded(true);
       updateBounds();

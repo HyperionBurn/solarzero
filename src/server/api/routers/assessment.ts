@@ -98,8 +98,8 @@ export const assessmentRouter = router({
         },
       });
 
-      // Cache the result (pass as object, cache will stringify)
-      await setCachedAssessment(buildingId, assessment as unknown as Record<string, unknown>);
+      // Cache the result
+      await setCachedAssessment(buildingId, assessment);
 
       return assessment;
     }),

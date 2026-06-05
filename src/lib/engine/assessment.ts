@@ -117,7 +117,7 @@ export async function runAssessmentWithCache(
   const result = await runAssessment(lat, lng, radius, dewaTariffAed, buildingContext);
 
   // Cache the result
-  await setCachedAssessment(buildingId, result as unknown as Record<string, unknown>);
+  await setCachedAssessment(buildingId, result);
 
   return result;
 }

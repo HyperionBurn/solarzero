@@ -113,7 +113,7 @@ export async function getCachedAssessment<T = Record<string, unknown>>(
 
 export async function setCachedAssessment(
   buildingId: string,
-  data: Record<string, unknown>,
+  data: unknown,
 ): Promise<void> {
   try {
     const key = `assessment:${buildingId}`;

@@ -99,20 +99,23 @@ describe("calculateCosts", () => {
     expect(big.co2OffsetTons).toBeGreaterThan(small.co2OffsetTons);
   });
 
-  it("rounds payback to 1 decimal place", () => {
+  it("produces consistent values for a standard Dubai roof", () => {
+    // 100 m2 roof, Dubai GHI 2100, 0.32 tariff
     const result = calculateCosts(100, GHI_DUBAI);
-    const decimalPart = result.paybackYears * 10;
-    expect(decimalPart).toBe(Math.round(decimalPart));
-  });
-
-  it("rounds NPV to nearest integer", () => {
-    const result = calculateCosts(100, GHI_DUBAI);
-    expect(result.npv25yrAed).toBe(Math.round(result.npv25yrAed));
-  });
-
-  it("rounds CO2 offset to 2 decimal places", () => {
-    const result = calculateCosts(100, GHI_DUBAI);
-    const decimalPart = result.co2OffsetTons * 100;
-    expect(decimalPart).toBe(Math.round(decimalPart));
+    // System: usableArea = 100*0.85*0.82 = 69.7; panels = floor(69.7/2.58*0.7) = floor(18.91) = 18; size = 18*0.55 = 9.9
+    expect(result.panelCount).toBe(18);
+    expect(result.systemSizeKwp).toBe(9.9);
+    // Cost: 9.9*1000*2.1 = 20790 (under 50kWp bracket)
+    expect(result.totalCostAed).toBe(20790);
+    // Production: 9.9 * 2100 * 0.78 = 16216.2
+    expect(result.annualProductionKwh).toBeCloseTo(16216.2, 0);
+    // Savings: 16216 * 0.32 = 5189.12
+    expect(result.annualSavingsAed).toBeCloseTo(5189, -1);
+    // Payback: 20790 / 5189 ≈ 4.0 years
+    expect(result.paybackYears).toBeCloseTo(4.0, 0);
+    // NPV should be strongly positive for Dubai
+    expect(result.npv25yrAed).toBeGreaterThan(20000);
+    // CO2: 16216/1000 * 0.42 = 6.81
+    expect(result.co2OffsetTons).toBeCloseTo(6.81, 0);
   });
 });

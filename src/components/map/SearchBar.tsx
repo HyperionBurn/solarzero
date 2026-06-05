@@ -54,7 +54,7 @@ export function SearchBar({ onSelect }: SearchBarProps) {
       const data = await res.json();
       setResults(data?.map((r: NominatimResult) => ({ id: String(r.place_id), place_name: r.display_name, center: [parseFloat(r.lon), parseFloat(r.lat)] })) || []);
       setIsOpen(true);
-    } catch { setResults([]); }
+    } catch (err) { console.error("Search fetch failed:", err); setResults([]); }
     finally { setLoading(false); }
   }
 
