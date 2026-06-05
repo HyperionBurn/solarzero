@@ -5,7 +5,7 @@ export function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
   if (pathname.startsWith("/api/auth") || pathname.startsWith("/p/")) {
-    return;
+    return NextResponse.next();
   }
 
   const token =
@@ -22,7 +22,7 @@ export function middleware(req: NextRequest) {
     if (token) {
       return NextResponse.redirect(new URL("/map", req.url));
     }
-    return;
+    return NextResponse.next();
   }
 
   if (!token) {

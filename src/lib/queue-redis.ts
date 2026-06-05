@@ -41,6 +41,7 @@ function getQueueRedis() {
   }
 
   try {
+    // Dynamic require is safe here: server-side runtime, ioredis lacks proper ESM.
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Redis = require("ioredis");
     redisInstance = new Redis(url, {

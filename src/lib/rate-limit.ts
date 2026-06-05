@@ -19,6 +19,7 @@ function createRateLimit(prefix: string, requests: number) {
   // redis is ioredis (TCP), @upstash/ratelimit expects @upstash/redis (HTTP).
   // These are structurally incompatible in TS, but ioredis works at runtime.
   // The redisIsMock guard above ensures mock is never passed here.
+  // This cast is the minimal bypass; type-checked mock guard keeps it safe.
   type UpstashRedis = {
     evalsha<TArgs extends unknown[], TData = unknown>(sha1: string, keys: string[], args: TArgs): Promise<TData>;
     get<TData = unknown>(key: string): Promise<TData | null>;

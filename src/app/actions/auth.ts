@@ -32,7 +32,7 @@ export async function loginAction(_prevState: unknown, formData: FormData) {
     return { error: null, success: true, email: validated.email };
   } catch (error) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message };
-    console.error("Login action error:", error);
+    logger.error({ err: error }, "Login action error");
     return { error: "Invalid email or password" };
   }
 }
@@ -63,7 +63,7 @@ export async function registerAction(_prevState: unknown, formData: FormData) {
     return { error: null, success: true };
   } catch (error) {
     if (error instanceof z.ZodError) return { error: error.issues[0].message };
-    console.error("Register action error:", error);
+    logger.error({ err: error }, "Register action error");
     return { error: "Failed to create account" };
   }
 }

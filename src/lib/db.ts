@@ -11,7 +11,7 @@ if (directUrl) {
   process.env.DIRECT_URL = directUrl;
 }
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+const globalForPrisma = globalThis as { prisma?: PrismaClient };
 
 export const db =
   globalForPrisma.prisma ??
