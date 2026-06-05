@@ -121,11 +121,45 @@ const frameEdgeGeometry = (() => {
   return geos;
 })();
 
+const bracketGeometry = (() => {
+  const bracketW = 0.06;
+  const bracketH = 0.35;
+  const bracketD = 0.06;
+  const positions = [
+    { x: -PANEL_WIDTH * 0.35, z: -PANEL_HEIGHT * 0.4 },
+    { x: PANEL_WIDTH * 0.35, z: -PANEL_HEIGHT * 0.4 },
+    { x: -PANEL_WIDTH * 0.35, z: PANEL_HEIGHT * 0.4 },
+    { x: PANEL_WIDTH * 0.35, z: PANEL_HEIGHT * 0.4 },
+  ];
+  return positions.map((p) => {
+    const g = new THREE.BoxGeometry(bracketW, bracketH, bracketD);
+    g.translate(p.x, -bracketH / 2 - 0.01, p.z);
+    return g;
+  });
+})();
+
+const railGeometry = (() => {
+  const railW = PANEL_WIDTH + 0.1;
+  const railH = 0.04;
+  const railD = 0.04;
+  const positions = [
+    { x: 0, z: -PANEL_HEIGHT * 0.4 },
+    { x: 0, z: PANEL_HEIGHT * 0.4 },
+  ];
+  return positions.map((p) => {
+    const g = new THREE.BoxGeometry(railW, railH, railD);
+    g.translate(p.x, -railH / 2 - 0.005, p.z);
+    return g;
+  });
+})();
+
 const tempObject = new THREE.Object3D();
 
 export function PanelGrid({ panelCount, roofWidth, roofDepth, tiltDeg }: PanelGridProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const frameRefs = useRef<(THREE.InstancedMesh | null)[]>([null, null, null, null]);
+  const bracketRefs = useRef<(THREE.InstancedMesh | null)[]>(bracketGeometry.map(() => null));
+  const railRefs = useRef<(THREE.InstancedMesh | null)[]>(railGeometry.map(() => null));
   const panelGeometry = useMemo(
     () => new THREE.BoxGeometry(PANEL_WIDTH, PANEL_THICKNESS, PANEL_HEIGHT),
     [],
@@ -188,6 +222,32 @@ export function PanelGrid({ panelCount, roofWidth, roofDepth, tiltDeg }: PanelGr
       }
       fr.instanceMatrix.needsUpdate = true;
     }
+
+    for (let b = 0; b < bracketGeometry.length; b++) {
+      const br = bracketRefs.current[b];
+      if (!br) continue;
+      for (let i = 0; i < positions.length; i++) {
+        const pos = positions[i]!;
+        tempObject.position.set(...pos.position);
+        tempObject.rotation.set(...pos.rotation);
+        tempObject.updateMatrix();
+        br.setMatrixAt(i, tempObject.matrix);
+      }
+      br.instanceMatrix.needsUpdate = true;
+    }
+
+    for (let r = 0; r < railGeometry.length; r++) {
+      const rl = railRefs.current[r];
+      if (!rl) continue;
+      for (let i = 0; i < positions.length; i++) {
+        const pos = positions[i]!;
+        tempObject.position.set(...pos.position);
+        tempObject.rotation.set(...pos.rotation);
+        tempObject.updateMatrix();
+        rl.setMatrixAt(i, tempObject.matrix);
+      }
+      rl.instanceMatrix.needsUpdate = true;
+    }
   }, [positions]);
 
   if (positions.length === 0) return null;
@@ -201,8 +261,24 @@ export function PanelGrid({ panelCount, roofWidth, roofDepth, tiltDeg }: PanelGr
       />
       {frameEdgeGeometry.map((geo, i) => (
         <instancedMesh
-          key={i}
+          key={`frame-${i}`}
           ref={(el) => { frameRefs.current[i] = el; }}
+          args={[geo, frameMaterial, positions.length]}
+          frustumCulled={false}
+        />
+      ))}
+      {bracketGeometry.map((geo, i) => (
+        <instancedMesh
+          key={`bracket-${i}`}
+          ref={(el) => { bracketRefs.current[i] = el; }}
+          args={[geo, frameMaterial, positions.length]}
+          frustumCulled={false}
+        />
+      ))}
+      {railGeometry.map((geo, i) => (
+        <instancedMesh
+          key={`rail-${i}`}
+          ref={(el) => { railRefs.current[i] = el; }}
           args={[geo, frameMaterial, positions.length]}
           frustumCulled={false}
         />
