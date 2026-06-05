@@ -229,7 +229,8 @@ function RooftopAccents({ width, depth, height }: { width: number; depth: number
   const inverterD = 0.9;
 
   const conduitPoints = useMemo(() => {
-    const pts: [number, number, number, number][] = [];
+    type ConduitSeg = { x1: number; y1: number; z1: number; x2: number; y2: number; z2: number };
+    const pts: ConduitSeg[] = [];
     const startX = -width * 0.05;
     const startZ = depth * 0.3;
     const endX = inverterX + inverterW / 2;
@@ -242,7 +243,7 @@ function RooftopAccents({ width, depth, height }: { width: number; depth: number
       const z1 = startZ + (endZ - startZ) * t1;
       const x2 = startX + (endX - startX) * t2;
       const z2 = startZ + (endZ - startZ) * t2;
-      pts.push([x1, baseY + 0.06, z1, x2, baseY + 0.06, z2]);
+      pts.push({ x1, y1: baseY + 0.06, z1, x2, y2: baseY + 0.06, z2 });
     }
     return pts;
   }, [width, depth, baseY, inverterX, inverterZ]);
@@ -357,14 +358,14 @@ function RooftopAccents({ width, depth, height }: { width: number; depth: number
       </group>
 
       {conduitPoints.map((seg, i) => {
-        const dx = seg[3] - seg[0];
-        const dz = seg[5] - seg[2];
+        const dx = seg.x2 - seg.x1;
+        const dz = seg.z2 - seg.z1;
         const length = Math.sqrt(dx * dx + dz * dz);
         const angle = Math.atan2(dx, dz);
-        const midX = (seg[0] + seg[3]) / 2;
-        const midZ = (seg[2] + seg[5]) / 2;
+        const midX = (seg.x1 + seg.x2) / 2;
+        const midZ = (seg.z1 + seg.z2) / 2;
         return (
-          <mesh key={i} position={[midX, seg[1], midZ]} rotation={[Math.PI / 2, 0, -angle]}>
+          <mesh key={i} position={[midX, seg.y1, midZ]} rotation={[Math.PI / 2, 0, -angle]}>
             <cylinderGeometry args={[0.04, 0.04, length, 6]} />
             <meshStandardMaterial color="#374151" roughness={0.5} metalness={0.5} />
           </mesh>
