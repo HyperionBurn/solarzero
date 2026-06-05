@@ -72,6 +72,7 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
     map.current.on("moveend", updateBounds);
 
     return () => { map.current?.remove(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fly to coordinates when parent triggers navigation

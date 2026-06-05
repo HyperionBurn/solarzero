@@ -100,6 +100,7 @@ export function SearchBar({ onSelect }: SearchBarProps) {
             <button
               key={result.id}
               role="option"
+              aria-selected={false}
               className="w-full px-4 py-2 text-left text-sm hover:bg-accent"
               onClick={() => {
                 onSelect(result);

@@ -11,7 +11,7 @@ interface BuildingMeshProps {
   color?: string;
 }
 
-function footprintToShape(footprint: [number, number][], height: number): THREE.Shape {
+function footprintToShape(footprint: [number, number][]): THREE.Shape {
   const base = footprint[0]!;
   const mPerDegLat = 111320;
   const mPerDegLng = 111320 * Math.cos((base[0] * Math.PI) / 180);
@@ -39,7 +39,7 @@ function defaultFootprint(width: number, depth: number): THREE.Shape {
 
 export function BuildingMesh({ footprint, width = 30, depth = 20, height = 12, color = "#CBD5E1" }: BuildingMeshProps) {
   const geometry = useMemo(() => {
-    const shape = footprint && footprint.length >= 3 ? footprintToShape(footprint, height) : defaultFootprint(width, depth);
+    const shape = footprint && footprint.length >= 3 ? footprintToShape(footprint) : defaultFootprint(width, depth);
     return new THREE.ExtrudeGeometry(shape, { steps: 1, depth: height, bevelEnabled: false });
   }, [footprint, height, width, depth]);
 

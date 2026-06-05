@@ -1,6 +1,5 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import { auth } from "@/lib/auth";
 import type { Session } from "next-auth";
 
 /**

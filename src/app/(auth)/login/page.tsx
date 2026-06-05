@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -13,18 +13,17 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const verified = searchParams.get("verified");
+  const [error, setError] = useState(() => {
     const authError = searchParams.get("error");
-    if (verified === "true") setSuccess("Email verified! You can now sign in.");
-    if (authError === "missing_token") setError("Verification link is missing.");
-    if (authError === "invalid_token") setError("Verification link is invalid or expired.");
-    if (authError === "verification_failed") setError("Verification failed. Please try again.");
-  }, [searchParams]);
+    if (authError === "missing_token") return "Verification link is missing.";
+    if (authError === "invalid_token") return "Verification link is invalid or expired.";
+    if (authError === "verification_failed") return "Verification failed. Please try again.";
+    return "";
+  });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(
+    searchParams.get("verified") === "true" ? "Email verified! You can now sign in." : "",
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

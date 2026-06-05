@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { api } from "@/trpc/react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Zap, ChevronRight, MapPin, Clock } from "lucide-react";

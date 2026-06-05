@@ -13,8 +13,8 @@ const Solar3DViewer = dynamic(() => import("@/components/viewer/Solar3DViewer").
   ssr: false,
   loading: () => <Skeleton className="h-[400px] w-full rounded-lg" />,
 });
-import { Loader2, Download, Play, ArrowLeft, Zap, Sun, DollarSign, TrendingUp, Clock, Leaf, MapPin, Share2 } from "lucide-react";
-import { getEmirateByCoords, getEmirateConfig } from "@/lib/regulatory/emirates";
+import { Loader2, Download, Play, ArrowLeft, Zap, Sun, DollarSign, TrendingUp, Clock, Leaf, Share2 } from "lucide-react";
+import { getEmirateConfig } from "@/lib/regulatory/emirates";
 import { calculateAllFinancingModels, type FinancingModel } from "@/lib/engine/financing";
 import { calculateSensitivity, CONSERVATIVE, EXPECTED, OPTIMISTIC, type SensitivityVariables } from "@/lib/engine/sensitivity";
 
@@ -27,16 +27,6 @@ const BUILDING_TYPE_COLORS: Record<string, string> = {
   retail: "bg-green-100 text-green-800 border-green-300",
   commercial: "bg-purple-100 text-purple-800 border-purple-300",
   residential: "bg-teal-100 text-teal-800 border-teal-300",
-};
-
-const EMIRATE_BADGE: Record<string, { label: string; className: string }> = {
-  dubai: { label: "Dubai · DEWA", className: "bg-blue-50 text-blue-700 border-blue-300" },
-  abu_dhabi: { label: "Abu Dhabi · ADDC", className: "bg-green-50 text-green-700 border-green-300" },
-  sharjah: { label: "Sharjah · SEWA", className: "bg-orange-50 text-orange-700 border-orange-300" },
-  ajman: { label: "Ajman · FEWA", className: "bg-gray-50 text-gray-700 border-gray-300" },
-  umm_al_quwain: { label: "Umm Al Quwain · FEWA", className: "bg-gray-50 text-gray-700 border-gray-300" },
-  ras_al_khaimah: { label: "Ras Al Khaimah · FEWA", className: "bg-gray-50 text-gray-700 border-gray-300" },
-  fujairah: { label: "Fujairah · FEWA", className: "bg-gray-50 text-gray-700 border-gray-300" },
 };
 
 export default function BuildingDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -54,7 +44,7 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const { data: building, isLoading: buildingLoading, error: buildingError } = api.building.getById.useQuery({ id });
-  const { data: assessment, refetch: refetchAssessment, isLoading: assessmentQueryLoading } = api.assessment.getByBuilding.useQuery({ buildingId: id });
+  const { data: assessment, refetch: refetchAssessment } = api.assessment.getByBuilding.useQuery({ buildingId: id });
   const runAssessment = api.assessment.run.useMutation();
   const generateProposal = api.proposal.generate.useMutation();
   const { data: proposal } = api.proposal.getByBuilding.useQuery({ buildingId: id });

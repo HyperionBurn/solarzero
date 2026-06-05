@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { queryBuildingsAround } from "@/lib/osm/client";
 import type { OSMResponse } from "@/lib/osm/client";
 import { parseOSMBuilding, parseOSMBuildings } from "@/lib/osm/parser";
-import { getEmirateByCoords, getEmirateConfig } from "@/lib/regulatory/emirates";
+import { getEmirateConfig } from "@/lib/regulatory/emirates";
 
 const UAE_LAT_MIN = 22.5;
 const UAE_LAT_MAX = 26.5;
@@ -164,7 +164,7 @@ export const buildingRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
-      const { lat, lng, radius } = input;
+      const { lat, lng } = input;
 
       if (!isWithinUAE(lat, lng)) {
         throw new Error(
