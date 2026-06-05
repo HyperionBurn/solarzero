@@ -20,6 +20,7 @@ model Building {
   hasSolar     Boolean      @default(false)
   assessment   Assessment?
   proposals    Proposal[]
+  opportunity  Opportunity?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
@@ -27,6 +28,109 @@ model Building {
   @@index([buildingType])
   @@index([osmId])
 }
+
+model Opportunity {
+  id                    String   @id @default(cuid())
+  buildingId            String   @unique
+  building              Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  status                String   @default("new")
+  priority              String   @default("unreviewed")
+  scoreTotal            Float    @default(0)
+  scoreBand             String   @default("D")
+  confidence            Float    @default(0)
+  nextAction            String   @default("ASSESS")
+  reasonsJson           Json?
+  risksJson             Json?
+  lastScoredAt          DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  scores                OpportunityScore[]
+  evidence              SolarizationEvidence[]
+  notes                 OpportunityNote[]
+
+  @@index([scoreBand, scoreTotal])
+  @@index([status])
+  @@index([nextAction])
+}
+
+model OpportunityScore {
+  id                    String      @id @default(cuid())
+  opportunityId         String
+  opportunity           Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  version               String
+  roofFitScore           Float
+  economicsScore         Float
+  buildingTypeScore      Float
+  unsolarizedScore       Float
+  dataCompletenessScore  Float
+  regulatoryScore        Float
+  totalScore             Float
+  reasonsJson            Json?
+  risksJson              Json?
+  createdAt              DateTime    @default(now())
+
+  @@index([opportunityId, createdAt])
+}
+
+model SolarizationEvidence {
+  id             String      @id @default(cuid())
+  opportunityId  String
+  opportunity    Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  status         String
+  source         String
+  sourceUrl      String?
+  confidence     Float
+  notes          String?
+  observedAt     DateTime?
+  createdBy      String?
+  createdAt      DateTime @default(now())
+
+  @@index([opportunityId])
+  @@index([status, confidence])
+}
+
+model InvestigationRun {
+  id                   String   @id @default(cuid())
+  name                 String?
+  centerLat            Float
+  centerLng            Float
+  radiusMeters         Int
+  status               String   @default("pending")
+  buildingsFound       Int      @default(0)
+  opportunitiesCreated Int      @default(0)
+  error                String?
+  createdBy            String?
+  createdAt             DateTime @default(now())
+  completedAt          DateTime?
+
+  buildings            InvestigationRunBuilding[]
+
+  @@index([status, createdAt])
+}
+
+model InvestigationRunBuilding {
+  id                 String           @id @default(cuid())
+  investigationRunId String
+  investigationRun   InvestigationRun @relation(fields: [investigationRunId], references: [id], onDelete: Cascade)
+  buildingId         String
+  opportunityId      String?
+  action             String
+  createdAt          DateTime         @default(now())
+
+  @@index([investigationRunId])
+  @@index([buildingId])
+}
+
+model OpportunityNote {
+  id             String      @id @default(cuid())
+  opportunityId  String
+  opportunity    Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  body           String
+  createdBy      String?
+  createdAt      DateTime @default(now())
+}
+
 
 model Assessment {
   id               String     @id @default(cuid())
