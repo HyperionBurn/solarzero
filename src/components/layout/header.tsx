@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { Sun } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSession } from "next-auth/react";
 
@@ -17,8 +18,9 @@ export function Header() {
   return (
     <header className="flex h-16 items-center justify-between border-b bg-background px-6 md:px-6 pl-14 md:pl-6">
       <div className="flex items-center gap-3">
-        <span className="text-xl font-bold tracking-tight">
-          <span className="text-teal-600">☀️</span> SolarZero
+        <span className="flex items-center gap-2 text-xl font-bold tracking-tight">
+          <Sun className="h-5 w-5 text-teal-600" />
+          SolarZero
         </span>
         <span className="hidden rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-700 sm:inline-block">
           Dubai, UAE

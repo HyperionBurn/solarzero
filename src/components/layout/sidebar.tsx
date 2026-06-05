@@ -4,10 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { MapPin, Clock, LogOut, Menu } from "lucide-react";
+import { MapPin, Clock, LogOut, Menu, Sun } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 const navItems = [
   {
@@ -40,8 +41,9 @@ export function Sidebar() {
   const sidebarContent = (
     <>
       <div className="flex h-16 items-center border-b px-4">
-        <span className="text-lg font-semibold">
-          <span className="text-teal-600">☀️</span> SolarZero
+        <span className="flex items-center gap-2 text-lg font-semibold">
+          <Sun className="h-5 w-5 text-teal-600" />
+          SolarZero
         </span>
       </div>
 
@@ -53,11 +55,12 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                 isActive
                   ? "bg-teal-600 text-white"
-                  : "text-slate-600 hover:bg-teal-50 hover:text-teal-700 dark:text-slate-400 dark:hover:bg-teal-950 dark:hover:text-teal-300"
-              }`}
+                  : "text-slate-600 hover:bg-teal-50 hover:text-teal-700 dark:text-slate-400 dark:hover:bg-teal-950 dark:hover:text-teal-300",
+              )}
             >
               <item.icon className="h-4 w-4" />
               {item.label}
