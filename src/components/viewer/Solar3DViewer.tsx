@@ -1,21 +1,35 @@
 "use client";
 
 import { Suspense } from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Environment } from "@react-three/drei";
 import * as THREE from "three";
+import { Canvas } from "@react-three/fiber";
+import { Environment, OrbitControls } from "@react-three/drei";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { BuildingMesh } from "./BuildingMesh";
 import { PanelGrid } from "./PanelGrid";
 
 interface Solar3DViewerProps {
-  /** Building type for footprint approximation */
   buildingType: string;
-  /** Roof area in m² (used to derive footprint) */
   roofAreaM2: number;
-  /** Building height in meters */
   heightMeters: number;
-  /** Number of solar panels */
   panelCount: number;
+}
+
+export function Solar3DViewer(props: Solar3DViewerProps) {
+  return (
+    <ErrorBoundary>
+      <Canvas
+        shadows
+        camera={{ position: [40, 20, 40], fov: 45 }}
+        style={{ background: "#f8fafc" }}
+        gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
+      >
+        <Suspense fallback={null}>
+          <Scene {...props} />
+        </Suspense>
+      </Canvas>
+    </ErrorBoundary>
+  );
 }
 
 const BUILDING_TYPE_COLORS_3D: Record<string, string> = {
@@ -88,20 +102,5 @@ function Scene({ buildingType, roofAreaM2, heightMeters, panelCount }: Solar3DVi
       />
       <Environment preset="city" />
     </>
-  );
-}
-
-export function Solar3DViewer(props: Solar3DViewerProps) {
-  return (
-    <Canvas
-      shadows
-      camera={{ position: [40, 20, 40], fov: 45 }}
-      style={{ background: "#f8fafc" }}
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
-    >
-      <Suspense fallback={null}>
-        <Scene {...props} />
-      </Suspense>
-    </Canvas>
   );
 }
