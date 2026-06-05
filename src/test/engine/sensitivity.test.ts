@@ -62,4 +62,36 @@ describe("calculateSensitivity", () => {
     const result = calculateSensitivity(negativeNpv, EXPECTED);
     expect(result.baselineNpv).toBe(-10_000);
   });
+
+  it("handles zero total cost", () => {
+    const zeroCost: SensitivityInput = { ...mockAssessment, totalCostAed: 0 };
+    const result = calculateSensitivity(zeroCost, EXPECTED);
+    expect(result.adjustedPayback).toBe(0);
+  });
+
+  it("handles very large NPV without overflow", () => {
+    const largeNpv: SensitivityInput = { ...mockAssessment, npv25yrAed: 1e9 };
+    const result = calculateSensitivity(largeNpv, EXPECTED);
+    expect(result.baselineNpv).toBe(1e9);
+    expect(Number.isFinite(result.adjustedNpv)).toBe(true);
+  });
+
+  it("CONSERVATIVE produces lower adjustedNpv than OPTIMISTIC", () => {
+    const conservative = calculateSensitivity(mockAssessment, CONSERVATIVE);
+    const optimistic = calculateSensitivity(mockAssessment, OPTIMISTIC);
+    expect(conservative.adjustedNpv).toBeLessThan(optimistic.adjustedNpv);
+  });
+
+  it("CONSERVATIVE produces higher adjustedPayback than OPTIMISTIC", () => {
+    const conservative = calculateSensitivity(mockAssessment, CONSERVATIVE);
+    const optimistic = calculateSensitivity(mockAssessment, OPTIMISTIC);
+    expect(conservative.adjustedPayback).toBeGreaterThan(optimistic.adjustedPayback);
+  });
+
+  it("all scenarios return finite adjustedNpv", () => {
+    for (const preset of [CONSERVATIVE, EXPECTED, OPTIMISTIC]) {
+      const result = calculateSensitivity(mockAssessment, preset);
+      expect(Number.isFinite(result.adjustedNpv)).toBe(true);
+    }
+  });
 });

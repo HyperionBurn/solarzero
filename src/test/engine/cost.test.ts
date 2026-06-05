@@ -99,6 +99,19 @@ describe("calculateCosts", () => {
     expect(big.co2OffsetTons).toBeGreaterThan(small.co2OffsetTons);
   });
 
+  it("returns zero costs for zero roof area regardless of tariff", () => {
+    const result = calculateCosts(0, 2100, 0.45);
+    expect(result.totalCostAed).toBe(0);
+    expect(result.annualSavingsAed).toBe(0);
+  });
+
+  it("handles very large roof area without overflow", () => {
+    const result = calculateCosts(10000, 2100);
+    expect(result.systemSizeKwp).toBeGreaterThan(0);
+    expect(Number.isFinite(result.totalCostAed)).toBe(true);
+    expect(result.npv25yrAed).toBeGreaterThan(0);
+  });
+
   it("produces consistent values for a standard Dubai roof", () => {
     // 100 m2 roof, Dubai GHI 2100, 0.32 tariff
     const result = calculateCosts(100, GHI_DUBAI);
