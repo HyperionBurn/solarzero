@@ -24,11 +24,21 @@ export default function LoginPage() {
   const [success, setSuccess] = useState(
     searchParams.get("verified") === "true" ? "Email verified! You can now sign in." : "",
   );
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  function validate(): boolean {
+    const errors: Record<string, string> = {};
+    if (!email.includes("@") || !email.includes(".")) errors.email = "Enter a valid email address.";
+    if (!password) errors.password = "Password is required.";
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSuccess("");
+    if (!validate()) return;
     setLoading(true);
     try {
       const result = await signIn("credentials", { email, password, redirect: false });
@@ -48,12 +58,14 @@ export default function LoginPage() {
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" placeholder="you@example.com" value={email}
-              onChange={(e) => setEmail(e.target.value)} required disabled={loading} />
+              onChange={(e) => { setEmail(e.target.value); setFieldErrors((prev) => ({ ...prev, email: "" })); }} required disabled={loading} />
+            {fieldErrors.email && <p className="text-xs text-destructive">{fieldErrors.email}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input id="password" name="password" type="password" placeholder="••••••••" value={password}
-              onChange={(e) => setPassword(e.target.value)} required disabled={loading} />
+              onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: "" })); }} required disabled={loading} />
+            {fieldErrors.password && <p className="text-xs text-destructive">{fieldErrors.password}</p>}
           </div>
           {success && <div className="rounded-md bg-green-50 p-3 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">{success}</div>}
           {error && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
