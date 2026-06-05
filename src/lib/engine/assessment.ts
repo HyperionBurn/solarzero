@@ -109,9 +109,9 @@ export async function runAssessmentWithCache(
   dewaTariffAed: number = 0.32,
   buildingContext?: AssessmentBuildingContext,
 ): Promise<AssessmentResult> {
-  const cached = await getCachedAssessment(buildingId);
+  const cached = await getCachedAssessment<AssessmentResult>(buildingId);
   if (cached) {
-    return cached as unknown as AssessmentResult;
+    return cached;
   }
 
   const result = await runAssessment(lat, lng, radius, dewaTariffAed, buildingContext);

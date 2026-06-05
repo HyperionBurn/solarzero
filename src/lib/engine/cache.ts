@@ -98,13 +98,13 @@ export async function setCachedSolcast(
 
 // ─── Assessment Cache ─────────────────────────────────────
 
-export async function getCachedAssessment(
+export async function getCachedAssessment<T = Record<string, unknown>>(
   buildingId: string,
-): Promise<Record<string, unknown> | null> {
+): Promise<T | null> {
   try {
     const key = `assessment:${buildingId}`;
     const cached = await redis.get(key);
-    return decodeJsonCache<Record<string, unknown>>(cached);
+    return decodeJsonCache<T>(cached);
   } catch (err) {
     logger.warn({ err }, "Redis getCachedAssessment error");
     return null;
