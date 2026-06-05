@@ -62,6 +62,13 @@ interface OpportunityEvidenceItem {
   createdAt: Date | string;
 }
 
+interface OpportunityNoteItem {
+  id: string;
+  body: string;
+  createdBy: string | null;
+  createdAt: Date | string;
+}
+
 
 export default function OpportunityDossierPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -253,6 +260,7 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
   const { building } = opportunity;
   const { assessment } = building;
   const evidenceTimeline = (opportunity as { evidence?: OpportunityEvidenceItem[] }).evidence ?? [];
+  const noteTimeline = (opportunity as { notes?: OpportunityNoteItem[] }).notes ?? [];
 
   const emirateInfo = getEmirateConfig(building.lat, building.lng);
 
@@ -839,11 +847,11 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
                   </form>
                 </Card>
 
-                {/* Notes list */}
+                  {/* Notes list */}
                 <div className="space-y-3">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Activity Log & Notes</h3>
-                  {opportunity.notes && opportunity.notes.length > 0 ? (
-                    opportunity.notes.map((note) => (
+                  {noteTimeline.length > 0 ? (
+                    noteTimeline.map((note) => (
                       <Card key={note.id} className="p-3 border-border/40 text-xs leading-relaxed">
                         <div className="flex items-center justify-between border-b border-border/10 pb-1.5 mb-1.5 text-muted-foreground">
                           <span className="font-semibold text-foreground/80">{note.createdBy || "system"}</span>
