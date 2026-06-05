@@ -17,6 +17,26 @@ describe("cn", () => {
   it("returns empty string for no arguments", () => {
     expect(cn()).toBe("");
   });
+
+  it("handles array arguments", () => {
+    expect(cn(["px-4", "py-2"])).toBe("px-4 py-2");
+  });
+
+  it("handles mixed array and string arguments", () => {
+    expect(cn("px-4", ["py-2", "mx-1"])).toBe("px-4 py-2 mx-1");
+  });
+
+  it("ignores null and undefined", () => {
+    expect(cn("px-4", null, undefined, "py-2")).toBe("px-4 py-2");
+  });
+
+  it("handles object arguments", () => {
+    expect(cn({ "px-4": true, "hidden": false })).toBe("px-4");
+  });
+
+  it("resolves complex Tailwind conflicts across arguments", () => {
+    expect(cn("px-4 py-2", "px-6", { "py-4": true })).toBe("px-6 py-4");
+  });
 });
 
 describe("escapeHtml", () => {
@@ -50,5 +70,18 @@ describe("escapeHtml", () => {
     expect(escapeHtml('<b class="x">text</b>')).toBe(
       "&lt;b class=&quot;x&quot;&gt;text&lt;/b&gt;"
     );
+  });
+
+  it("preserves already escaped entities", () => {
+    expect(escapeHtml("&amp; &lt;")).toBe("&amp;amp; &amp;lt;");
+  });
+
+  it("handles string with only special characters", () => {
+    expect(escapeHtml("&<>\""))
+      .toBe("&amp;&lt;&gt;&quot;");
+  });
+
+  it("handles consecutive special characters", () => {
+    expect(escapeHtml("<<>>")).toBe("&lt;&lt;&gt;&gt;");
   });
 });
