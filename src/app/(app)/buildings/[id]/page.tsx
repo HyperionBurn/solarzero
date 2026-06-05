@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { api } from "@/trpc/react";
@@ -153,7 +154,12 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
     : "";
 
   return (
-    <div className="space-y-6 p-6">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="space-y-6 p-6"
+    >
       {toast && (
         <div
           role="alert"
@@ -499,7 +505,7 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
