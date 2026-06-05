@@ -14,11 +14,23 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+
+  function validate(): boolean {
+    const errors: Record<string, string> = {};
+    if (!email.includes("@") || !email.includes(".")) errors.email = "Enter a valid email address.";
+    if (password.length < 8) errors.password = "Password must be at least 8 characters.";
+    if (password !== confirmPassword) errors.confirmPassword = "Passwords do not match.";
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!validate()) return;
     setError("");
     setLoading(true);
     try {
@@ -52,11 +64,18 @@ export default function RegisterPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => { setEmail(e.target.value); setFieldErrors((prev) => ({ ...prev, email: "" })); }} required />
+            {fieldErrors.email && <p className="text-xs text-destructive">{fieldErrors.email}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" placeholder="********" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+            <Input id="password" type="password" placeholder="********" value={password} onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: "" })); }} required minLength={8} />
+            {fieldErrors.password && <p className="text-xs text-destructive">{fieldErrors.password}</p>}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Input id="confirmPassword" type="password" placeholder="********" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, confirmPassword: "" })); }} required />
+            {fieldErrors.confirmPassword && <p className="text-xs text-destructive">{fieldErrors.confirmPassword}</p>}
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
