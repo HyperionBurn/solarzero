@@ -60,7 +60,7 @@ export default function MapPage() {
           </div>
         )}
         {error && (
-          <div className="mt-2 flex items-center gap-2 rounded-md bg-red-500/80 px-3 py-1.5 text-xs text-white backdrop-blur">
+          <div role="alert" className="mt-2 flex items-center gap-2 rounded-md bg-red-500/80 px-3 py-1.5 text-xs text-white backdrop-blur">
             <span className="flex-1">{error}</span>
             <button onClick={() => setError(null)} className="ml-1 rounded p-0.5 hover:bg-white/20">
               <X className="h-3 w-3" />

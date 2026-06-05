@@ -167,7 +167,7 @@ export default function ProposalPage() {
           {proposal.status === "failed" && (
             <>
               {retryError && (
-                <p className="text-xs text-destructive text-center">{retryError}</p>
+                <p role="alert" className="text-xs text-destructive text-center">{retryError}</p>
               )}
               <Button
                 className="w-full"

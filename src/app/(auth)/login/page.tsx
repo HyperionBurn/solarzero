@@ -59,13 +59,13 @@ export default function LoginPage() {
             <Label htmlFor="email">Email</Label>
             <Input id="email" name="email" type="email" placeholder="you@example.com" value={email}
               onChange={(e) => { setEmail(e.target.value); setFieldErrors((prev) => ({ ...prev, email: "" })); }} required disabled={loading} />
-            {fieldErrors.email && <p className="text-xs text-destructive">{fieldErrors.email}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" name="password" type="password" placeholder="••••••••" value={password}
-              onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: "" })); }} required disabled={loading} />
-            {fieldErrors.password && <p className="text-xs text-destructive">{fieldErrors.password}</p>}
+            {fieldErrors.email && <p role="alert" className="text-xs text-destructive">{fieldErrors.email}</p>}
+           </div>
+           <div className="space-y-2">
+             <Label htmlFor="password">Password</Label>
+             <Input id="password" name="password" type="password" placeholder="••••••••" value={password}
+               onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: "" })); }} required disabled={loading} />
+            {fieldErrors.password && <p role="alert" className="text-xs text-destructive">{fieldErrors.password}</p>}
           </div>
           {success && <div role="alert" className="rounded-md bg-green-50 p-3 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">{success}</div>}
           {error && <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}

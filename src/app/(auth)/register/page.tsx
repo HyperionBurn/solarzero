@@ -65,17 +65,17 @@ export default function RegisterPage() {
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => { setEmail(e.target.value); setFieldErrors((prev) => ({ ...prev, email: "" })); }} required />
-            {fieldErrors.email && <p className="text-xs text-destructive">{fieldErrors.email}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" placeholder="********" value={password} onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: "" })); }} required minLength={8} />
-            {fieldErrors.password && <p className="text-xs text-destructive">{fieldErrors.password}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input id="confirmPassword" type="password" placeholder="********" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, confirmPassword: "" })); }} required />
-            {fieldErrors.confirmPassword && <p className="text-xs text-destructive">{fieldErrors.confirmPassword}</p>}
+            {fieldErrors.email && <p role="alert" className="text-xs text-destructive">{fieldErrors.email}</p>}
+           </div>
+           <div className="space-y-2">
+             <Label htmlFor="password">Password</Label>
+             <Input id="password" type="password" placeholder="********" value={password} onChange={(e) => { setPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, password: "" })); }} required minLength={8} />
+            {fieldErrors.password && <p role="alert" className="text-xs text-destructive">{fieldErrors.password}</p>}
+           </div>
+           <div className="space-y-2">
+             <Label htmlFor="confirmPassword">Confirm Password</Label>
+             <Input id="confirmPassword" type="password" placeholder="********" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors((prev) => ({ ...prev, confirmPassword: "" })); }} required />
+            {fieldErrors.confirmPassword && <p role="alert" className="text-xs text-destructive">{fieldErrors.confirmPassword}</p>}
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">

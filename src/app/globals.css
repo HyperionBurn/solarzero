@@ -19,7 +19,7 @@
   --color-popover: var(--popover, #ffffff);
   --color-popover-foreground: var(--popover-foreground, #0f172a);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 :root {
