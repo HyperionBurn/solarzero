@@ -38,7 +38,7 @@ export function Solar3DViewer(props: Solar3DViewerProps) {
         style={{ background: bgColor }}
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
       >
-        <Suspense fallback={null}>
+        <Suspense fallback={<CanvasLoader />}>
           <Scene {...props} isDark={isDark} />
         </Suspense>
       </Canvas>
