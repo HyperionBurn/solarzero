@@ -191,6 +191,89 @@ function GroundGrid({ isDark }: { isDark: boolean }) {
   );
 }
 
+interface TreeData {
+  x: number;
+  z: number;
+  trunkH: number;
+  trunkR: number;
+  canopyR: number;
+  canopyH: number;
+  canopyColor: string;
+  rotation: number;
+}
+
+function Trees({ dims, isDark }: { dims: { width: number; depth: number }; isDark: boolean }) {
+  const trees = useMemo<TreeData[]>(() => {
+    const list: TreeData[] = [];
+    const margin = 6;
+    const bldHalfW = dims.width / 2 + margin;
+    const bldHalfD = dims.depth / 2 + margin;
+
+    const canopyColors = isDark
+      ? ["#1e3a2f", "#243f33", "#1a3329"]
+      : ["#2d6a4f", "#40916c", "#52b788", "#74c69d", "#3a7d44"];
+
+    const seedPositions: [number, number][] = [
+      [-bldHalfW - 4, -bldHalfD - 2],
+      [-bldHalfW + 2, bldHalfD + 4],
+      [bldHalfW + 5, -bldHalfD - 3],
+      [bldHalfW + 1, bldHalfD + 2],
+      [-bldHalfW - 8, 0],
+      [bldHalfW + 10, 0],
+      [0, -bldHalfD - 8],
+      [0, bldHalfD + 10],
+      [-bldHalfW - 12, bldHalfD - 4],
+      [bldHalfW + 8, -bldHalfD + 4],
+      [-bldHalfW + 4, -bldHalfD - 6],
+      [bldHalfW - 3, bldHalfD + 6],
+      [-bldHalfW - 6, bldHalfD + 8],
+      [bldHalfW + 12, bldHalfD - 2],
+    ];
+
+    seedPositions.forEach((pos, i) => {
+      const t = i * 7919;
+      const sizeFactor = 0.7 + ((t % 100) / 100) * 0.7;
+      list.push({
+        x: pos[0] + (((i * 13) % 7) - 3) * 0.5,
+        z: pos[1] + (((i * 17) % 7) - 3) * 0.5,
+        trunkH: 2.0 * sizeFactor,
+        trunkR: 0.18 * sizeFactor,
+        canopyR: 1.6 * sizeFactor,
+        canopyH: 3.0 * sizeFactor,
+        canopyColor: canopyColors[i % canopyColors.length]!,
+        rotation: (i * 0.7) % (Math.PI * 2),
+      });
+    });
+
+    return list;
+  }, [dims, isDark]);
+
+  return (
+    <group>
+      {trees.map((t, i) => (
+        <group key={i} position={[t.x, 0, t.z]} rotation={[0, t.rotation, 0]}>
+          <mesh position={[0, t.trunkH / 2, 0]} castShadow>
+            <cylinderGeometry args={[t.trunkR * 0.8, t.trunkR, t.trunkH, 8]} />
+            <meshStandardMaterial color="#5c3a1e" roughness={0.95} metalness={0.05} />
+          </mesh>
+          <mesh position={[0, t.trunkH + t.canopyH * 0.3, 0]} castShadow>
+            <coneGeometry args={[t.canopyR, t.canopyH, 10]} />
+            <meshStandardMaterial color={t.canopyColor} roughness={0.85} metalness={0.0} />
+          </mesh>
+          <mesh position={[0, t.trunkH + t.canopyH * 0.7, 0]} castShadow>
+            <coneGeometry args={[t.canopyR * 0.7, t.canopyH * 0.6, 10]} />
+            <meshStandardMaterial color={t.canopyColor} roughness={0.85} metalness={0.0} />
+          </mesh>
+          <mesh position={[0, t.trunkH + t.canopyH * 0.5, t.canopyR * 0.5]}>
+            <sphereGeometry args={[t.canopyR * 0.45, 8, 8]} />
+            <meshStandardMaterial color={t.canopyColor} roughness={0.85} metalness={0.0} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
 function Scene({ buildingType, roofAreaM2, heightMeters, panelCount, isDark }: Solar3DViewerProps & { isDark: boolean }) {
   const dims = getFootprintDims(buildingType, roofAreaM2);
   const bldHeight = heightMeters || 12;
@@ -223,6 +306,7 @@ function Scene({ buildingType, roofAreaM2, heightMeters, panelCount, isDark }: S
       {panelCount > 0 && <SolarPanelRoof panelCount={panelCount} dims={dims} buildingHeight={bldHeight} />}
 
       <GroundGrid isDark={isDark} />
+      <Trees dims={dims} isDark={isDark} />
 
       <OrbitControls
         enableDamping
