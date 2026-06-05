@@ -13,6 +13,12 @@ export default defineConfig({
       reporter: ["text", "lcov", "json-summary"],
       include: ["src/lib/**/*.ts", "src/server/**/*.ts"],
       exclude: ["src/test/**", "src/**/*.test.*", "src/**/*.d.ts"],
+      thresholds: {
+        functions: 50,
+        lines: 50,
+        branches: 40,
+        statements: 50,
+      },
     },
   },
   resolve: {
