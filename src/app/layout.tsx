@@ -20,9 +20,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://tiles.maplibre.org" />
+        <link rel="preconnect" href="https://basemaps.cartocdn.com" />
         <link rel="preconnect" href="https://jlqgkxyjtqxeyzhrdyax.supabase.co" />
-        <link rel="dns-prefetch" href="https://tiles.maplibre.org" />
+        <link rel="dns-prefetch" href="https://basemaps.cartocdn.com" />
         <link rel="dns-prefetch" href="https://jlqgkxyjtqxeyzhrdyax.supabase.co" />
       </head>
       <body className={`${fontSans.variable} h-full antialiased font-sans`}>
