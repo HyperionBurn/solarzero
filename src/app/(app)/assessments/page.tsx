@@ -23,11 +23,28 @@ export default function AssessmentsPage() {
 
       {isLoading ? (
         <Card>
-          <CardContent className="py-8">
-            <div className="space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/50">
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Building Address</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Date</th>
+                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">System Size</th>
+                    <th className="px-4 py-3 text-center font-medium text-muted-foreground" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <tr key={i} className="border-b">
+                      <td className="px-4 py-3"><Skeleton className="h-4 w-48" /></td>
+                      <td className="px-4 py-3"><Skeleton className="h-4 w-24" /></td>
+                      <td className="px-4 py-3"><Skeleton className="ml-auto h-4 w-16" /></td>
+                      <td className="px-4 py-3"><Skeleton className="mx-auto h-8 w-16 rounded-md" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
