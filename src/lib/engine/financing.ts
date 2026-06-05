@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 export type FinancingType = "DIRECT" | "PPA" | "LEASE" | "ESCO";
 
 export interface FinancingModel {
@@ -162,7 +164,8 @@ function calculateIRR(cashFlows: number[]): number | null {
       rate -= npv / dnpv;
     }
     return Math.round(rate * 10000) / 100;
-  } catch {
+  } catch (err) {
+    logger.warn({ err }, "IRR calculation failed");
     return null;
   }
 }

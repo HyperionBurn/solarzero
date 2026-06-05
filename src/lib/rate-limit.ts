@@ -1,5 +1,4 @@
 import { Ratelimit } from "@upstash/ratelimit";
-import type { RatelimitConfig } from "@upstash/ratelimit";
 import { redis, redisIsMock } from "./redis";
 
 type RateLimitResponse = {
@@ -17,8 +16,16 @@ const noopRateLimit = {
 function createRateLimit(prefix: string, requests: number) {
   if (redisIsMock) return noopRateLimit;
 
+  // redis is ioredis (TCP), @upstash/ratelimit expects @upstash/redis (HTTP).
+  // These are structurally incompatible in TS, but ioredis works at runtime.
+  // The redisIsMock guard above ensures mock is never passed here.
+  type UpstashRedis = {
+    evalsha<TArgs extends unknown[], TData = unknown>(sha1: string, keys: string[], args: TArgs): Promise<TData>;
+    get<TData = unknown>(key: string): Promise<TData | null>;
+    set<TData>(key: string, value: TData): Promise<"OK" | TData | null>;
+  };
   return new Ratelimit({
-    redis: redis as unknown as RatelimitConfig["redis"],
+    redis: redis as unknown as UpstashRedis,
     limiter: Ratelimit.slidingWindow(requests, "60 s"),
     analytics: true,
     prefix,

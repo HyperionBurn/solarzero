@@ -2,10 +2,11 @@ import { logger } from "./logger";
 import { optionalEnvValue } from "./env";
 
 interface RedisLike {
-  get(key: string): Promise<string | null>;
+  get<TData = string>(key: string): Promise<TData | null>;
   set(key: string, value: string | number | Buffer): Promise<"OK">;
   setex(key: string, seconds: number, value: string | number | Buffer): Promise<"OK">;
   del(...keys: string[]): Promise<number>;
+  evalsha<TArgs extends unknown[], TData = unknown>(sha1: string, keys: string[], args: TArgs): Promise<TData>;
   ping(): Promise<string>;
   on(event: string, handler: (...args: unknown[]) => void): void;
   quit(): Promise<"OK">;
@@ -21,6 +22,7 @@ function createMockRedis(): RedisLike {
     set: () => Promise.resolve("OK" as const),
     setex: () => Promise.resolve("OK" as const),
     del: () => Promise.resolve(0),
+    evalsha: () => Promise.resolve(null),
     ping: () => Promise.resolve("PONG"),
     on: () => {},
     quit: () => Promise.resolve("OK" as const),

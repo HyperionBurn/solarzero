@@ -45,7 +45,7 @@ export default function RegisterPage() {
       });
       if (!result?.ok) { router.push("/login"); }
       else { router.replace(result.url ?? "/map"); router.refresh(); }
-    } catch (err) { setError(err instanceof Error ? err.message : "An error occurred"); }
+    } catch (err) { console.error("Registration error:", err); setError(err instanceof Error ? err.message : "An error occurred"); }
     finally { setLoading(false); }
   }
 
