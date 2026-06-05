@@ -77,8 +77,7 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
     map.current.on("moveend", updateBounds);
 
     return () => { map.current?.remove(); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [center, zoom, pitch, resolvedTheme, updateBounds]);
 
   // Fly to coordinates when parent triggers navigation
   useEffect(() => {
@@ -115,7 +114,7 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
         .setLngLat([building.lng, building.lat]).setPopup(popup).addTo(m);
       markersRef.current.push(marker);
     });
-  }, [buildings, mapLoaded]);
+  }, [buildings, mapLoaded, isDark]);
 
   return (
     <div className="relative h-full w-full">
