@@ -59,6 +59,9 @@ describe("calculateCosts", () => {
     const withTemp = calculateCosts(100, GHI_DUBAI, 0.32, {
       deratingFactor: 0.92,
       dataSource: "SOLCAST",
+      avgTempC: 32,
+      cellTempC: 45,
+      monthlyAvgTempC: [25, 26, 28, 32, 35, 38, 40, 40, 38, 34, 30, 26],
     });
     // With thermal derating 0.92, performance ratio = 0.85 * 0.92 * 0.95 * 0.97 = 0.720
     // Without thermal derating, PR = 0.78
