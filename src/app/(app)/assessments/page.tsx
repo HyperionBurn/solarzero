@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { api } from "@/trpc/react";
 import { Card, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,12 @@ export default function AssessmentsPage() {
   const { data: assessments, isLoading } = api.assessment.getHistory.useQuery({ limit });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-6">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="mx-auto max-w-6xl space-y-6 p-4 md:p-6"
+    >
       <div>
         <h1 className="text-2xl font-bold">Assessment History</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -123,6 +129,6 @@ export default function AssessmentsPage() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </motion.div>
   );
 }
