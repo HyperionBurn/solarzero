@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 interface BuildingMeshProps {
@@ -446,6 +447,25 @@ function RooftopAccents({ width, depth, height }: { width: number; depth: number
     return pts;
   }, [width, depth, baseY, inverterX, inverterZ]);
 
+  const ledGreenRef = useRef<THREE.MeshStandardMaterial>(null);
+  const ledYellowRef = useRef<THREE.MeshStandardMaterial>(null);
+  const ledRedRef = useRef<THREE.MeshStandardMaterial>(null);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    if (ledGreenRef.current) {
+      ledGreenRef.current.emissiveIntensity = 0.9 + Math.sin(t * 1.2) * 0.3;
+    }
+    if (ledYellowRef.current) {
+      const blink = Math.floor(t * 2) % 2 === 0;
+      ledYellowRef.current.emissiveIntensity = blink ? 1.1 : 0.2;
+    }
+    if (ledRedRef.current) {
+      const blink = Math.floor(t * 0.4) % 5 === 0;
+      ledRedRef.current.emissiveIntensity = blink ? 1.2 : 0.2;
+    }
+  });
+
   return (
     <>
       <group position={[tankX, baseY, tankZ]}>
@@ -517,15 +537,15 @@ function RooftopAccents({ width, depth, height }: { width: number; depth: number
         </mesh>
         <mesh position={[-inverterW * 0.25, inverterH * 0.6, inverterD / 2 + 0.005]}>
           <planeGeometry args={[0.18, 0.18]} />
-          <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={0.9} />
+          <meshStandardMaterial ref={ledGreenRef} color="#22c55e" emissive="#22c55e" emissiveIntensity={0.9} />
         </mesh>
         <mesh position={[inverterW * 0.0, inverterH * 0.6, inverterD / 2 + 0.005]}>
           <planeGeometry args={[0.18, 0.18]} />
-          <meshStandardMaterial color="#facc15" emissive="#facc15" emissiveIntensity={0.9} />
+          <meshStandardMaterial ref={ledYellowRef} color="#facc15" emissive="#facc15" emissiveIntensity={0.9} />
         </mesh>
         <mesh position={[inverterW * 0.25, inverterH * 0.6, inverterD / 2 + 0.005]}>
           <planeGeometry args={[0.18, 0.18]} />
-          <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={0.7} />
+          <meshStandardMaterial ref={ledRedRef} color="#ef4444" emissive="#ef4444" emissiveIntensity={0.7} />
         </mesh>
         <mesh position={[0, inverterH * 0.25, inverterD / 2 + 0.001]}>
           <planeGeometry args={[inverterW * 0.8, inverterH * 0.3]} />
