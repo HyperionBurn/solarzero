@@ -349,4 +349,42 @@ export const opportunityRouter = router({
         },
       });
     }),
+
+  /**
+   * Get KPI stats for the opportunity dashboard.
+   */
+  getStats: publicProcedure.query(async () => {
+    const total = await db.opportunity.count();
+    const aGrade = await db.opportunity.count({
+      where: { scoreBand: "A" },
+    });
+    const unassessed = await db.opportunity.count({
+      where: {
+        building: {
+          assessment: null,
+        },
+      },
+    });
+    const verifySolar = await db.opportunity.count({
+      where: {
+        nextAction: "VERIFY_SOLARIZATION",
+      },
+    });
+    const contacted = await db.opportunity.count({
+      where: { status: "contacted" },
+    });
+    const rejected = await db.opportunity.count({
+      where: { status: "rejected" },
+    });
+
+    return {
+      total,
+      aGrade,
+      unassessed,
+      verifySolar,
+      contacted,
+      rejected,
+    };
+  }),
 });
+

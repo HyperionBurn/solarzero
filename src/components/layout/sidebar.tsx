@@ -4,13 +4,18 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { MapPin, Clock, LogOut, Menu, Sun } from "lucide-react";
+import { MapPin, Clock, LogOut, Menu, Sun, Target } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 const navItems = [
+  {
+    label: "Opportunities",
+    href: "/opportunities",
+    icon: Target,
+  },
   {
     label: "Map",
     href: "/map",
@@ -22,6 +27,7 @@ const navItems = [
     icon: Clock,
   },
 ];
+
 
 export function Sidebar() {
   const { data: session } = useSession();
