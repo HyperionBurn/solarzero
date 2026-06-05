@@ -49,13 +49,13 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
       <header className="border-b bg-white px-6 py-4">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-500 text-xs font-bold text-white">SZ</div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-600 text-xs font-bold text-white">SZ</div>
             <div>
               <h2 className="text-sm font-semibold">SolarZero</h2>
               <p className="text-xs text-muted-foreground">Powered by Positive Zero</p>
             </div>
           </div>
-          <a href={`mailto:sales@positivezero.ae?subject=Solar Proposal: ${building.address}`} className="rounded-md bg-yellow-500 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-600">Schedule a Call</a>
+          <a href={`mailto:sales@positivezero.ae?subject=Solar Proposal: ${building.address}`} className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700">Schedule a Call</a>
         </div>
       </header>
 
@@ -129,7 +129,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
 
             <Card>
               <CardContent className="pt-6">
-                <a href={`mailto:sales@positivezero.ae?subject=Solar Proposal: ${building.address}`} className="block w-full rounded-md bg-yellow-500 py-3 text-center text-sm font-medium text-white hover:bg-yellow-600">Schedule a Call</a>
+                <a href={`mailto:sales@positivezero.ae?subject=Solar Proposal: ${building.address}`} className="block w-full rounded-md bg-teal-600 py-3 text-center text-sm font-medium text-white hover:bg-teal-700">Schedule a Call</a>
                 <p className="mt-3 text-center text-xs text-muted-foreground">Ready to go solar? Our team will walk you through the proposal.</p>
               </CardContent>
             </Card>
