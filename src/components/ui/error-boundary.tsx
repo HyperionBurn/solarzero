@@ -42,7 +42,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
 function DefaultErrorFallback({ error, onReset }: { error?: Error; onReset?: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-muted/30 p-8 text-center">
+    <div role="alert" className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-muted/30 p-8 text-center">
       <AlertTriangle className="mb-3 h-8 w-8 text-amber-500" />
       <h3 className="mb-1 text-sm font-semibold">Something went wrong</h3>
       <p className="mb-3 text-xs text-muted-foreground">

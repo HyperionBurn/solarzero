@@ -57,7 +57,7 @@ export default function RegisterPage() {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          {error && <div className="rounded-md bg-destructive/10 px-4 py-2 text-sm text-destructive">{error}</div>}
+          {error && <div role="alert" className="rounded-md bg-destructive/10 px-4 py-2 text-sm text-destructive">{error}</div>}
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
             <Input id="name" type="text" placeholder="John Doe" value={name} onChange={(e) => setName(e.target.value)} required />
