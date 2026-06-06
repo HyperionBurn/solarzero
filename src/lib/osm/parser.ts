@@ -189,9 +189,15 @@ export function parseOSMBuilding(osmData: OSMResponse): ParsedBuilding | null {
 
   if (buildingElements.length === 0) return null;
 
-  // Prefer the largest building by footprint area
-  let bestBuilding: OSMElement | null = null;
-  let bestArea = 0;
+  type BuildingCandidate = {
+    element: OSMElement;
+    area: number;
+    name: string | null;
+  };
+
+  // Prefer named buildings first, then largest footprint.
+  let bestNamedBuilding: BuildingCandidate | null = null;
+  let bestUnnamedBuilding: BuildingCandidate | null = null;
 
   for (const el of buildingElements) {
     // For relations, also look at ways that are part of the relation
@@ -217,13 +223,21 @@ export function parseOSMBuilding(osmData: OSMResponse): ParsedBuilding | null {
     }
 
     const area = shoelaceArea(coords);
-    if (area > bestArea) {
-      bestArea = area;
-      bestBuilding = el;
+    const name = extractBuildingName(el.tags);
+    const candidate: BuildingCandidate = { element: el, area, name };
+
+    if (name) {
+      if (!bestNamedBuilding || area > bestNamedBuilding.area) {
+        bestNamedBuilding = candidate;
+      }
+    } else if (!bestUnnamedBuilding || area > bestUnnamedBuilding.area) {
+      bestUnnamedBuilding = candidate;
     }
   }
 
+  const bestBuilding = bestNamedBuilding?.element ?? bestUnnamedBuilding?.element ?? null;
   if (!bestBuilding) return null;
+  const bestArea = bestNamedBuilding?.area ?? bestUnnamedBuilding?.area ?? 0;
 
   const buildingType = extractBuildingType(bestBuilding.tags);
   const name = extractBuildingName(bestBuilding.tags);

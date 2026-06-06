@@ -99,3 +99,21 @@ export async function queryBuildingsInBbox(
 
   return response.json() as Promise<OSMResponse>;
 }
+
+export async function queryBuildingByOsmElement(
+  osmType: "way" | "relation",
+  osmId: number,
+): Promise<OSMResponse> {
+  const query = `[out:json][timeout:15];(${osmType}(${osmId}););out body;>;out skel qt;`;
+
+  const response = await fetchWithRetry(OVERPASS_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "SolarZero/1.0 (UAE Solar Assessment Tool; contact@positivezero.com)",
+    },
+    body: new URLSearchParams({ data: query }),
+  });
+
+  return response.json() as Promise<OSMResponse>;
+}

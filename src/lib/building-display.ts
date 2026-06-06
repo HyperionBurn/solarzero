@@ -9,10 +9,7 @@ export function getBuildingDisplayName(building: BuildingLike | null | undefined
   const name = building.name?.trim();
   if (name) return name;
 
-  const address = building.address?.trim();
-  if (address) return address;
-
-  return "Building";
+  return "Unnamed building";
 }
 
 export function getBuildingDisplaySubtitle(building: BuildingLike | null | undefined): string | null {
@@ -21,7 +18,7 @@ export function getBuildingDisplaySubtitle(building: BuildingLike | null | undef
   const name = building.name?.trim();
   const address = building.address?.trim();
 
-  if (name && address && name !== address) {
+  if (address && (!name || name !== address)) {
     return address;
   }
 

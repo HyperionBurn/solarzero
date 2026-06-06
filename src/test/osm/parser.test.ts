@@ -59,4 +59,13 @@ describe("OSM building parsing", () => {
       }),
     ).toBe("Burj Alpha");
   });
+
+  it("falls back to a neutral placeholder when the real name is missing", () => {
+    expect(
+      getBuildingDisplayName({
+        name: null,
+        address: "Commercial Building in Dubai Mall, Dubai",
+      }),
+    ).toBe("Unnamed building");
+  });
 });
