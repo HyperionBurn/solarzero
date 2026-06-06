@@ -4,6 +4,7 @@ import { buildingRouter } from "./routers/building";
 import { assessmentRouter } from "./routers/assessment";
 import { proposalRouter } from "./routers/proposal";
 import { opportunityRouter } from "./routers/opportunity";
+import { campaignRouter } from "./routers/campaign";
 
 export const appRouter = router({
   health: healthRouter,
@@ -11,6 +12,7 @@ export const appRouter = router({
   assessment: assessmentRouter,
   proposal: proposalRouter,
   opportunity: opportunityRouter,
+  campaign: campaignRouter,
 });
 
 
