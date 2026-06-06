@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "workflow": "performance-goal",
+  "slug": "qol-20",
+  "objective": "Deliver 20 user-facing quality-of-life improvements across SolarZero without regressing existing flows",
+  "status": "in_progress",
+  "createdAt": "2026-06-06T13:29:07.302Z",
+  "updatedAt": "2026-06-06T13:29:13.546Z",
+  "evaluator": {
+    "command": "npm run lint && npm run type-check && npm run test:run && npm run build",
+    "contract": "PASS when all four commands succeed, the 20-item improvement checklist is fully completed, and no production-smoke blockers remain"
+  },
+  "artifactPaths": {
+    "state": ".omx/goals/performance/qol-20/state.json",
+    "ledger": ".omx/goals/performance/qol-20/ledger.jsonl",
+    "evaluator": ".omx/goals/performance/qol-20/evaluator.md"
+  },
+  "startedAt": "2026-06-06T13:29:13.546Z"
+}

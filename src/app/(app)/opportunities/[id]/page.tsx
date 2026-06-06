@@ -21,6 +21,7 @@ import {
   Play,
   Download,
   Share2,
+  Copy,
   FileCheck,
   FileText,
   Sparkles,
@@ -176,6 +177,15 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
       showToast("Failed to create share link.", "error");
     } finally {
       setShareLoading(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      showToast("Dossier link copied to clipboard!", "success");
+    } catch {
+      showToast("Failed to copy dossier link.", "error");
     }
   };
 
@@ -486,6 +496,10 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
               >
                 {exportLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                 View Proposal PDF
+              </Button>
+              <Button onClick={handleCopyLink} variant="outline" className="h-9 gap-1.5 px-3 text-xs font-semibold">
+                <Copy className="h-3.5 w-3.5" />
+                Copy Link
               </Button>
               <Button onClick={handleShareProposal} disabled={shareLoading} variant="outline" className="h-9 px-3">
                 {shareLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}

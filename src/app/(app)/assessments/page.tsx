@@ -7,11 +7,12 @@ import { api } from "@/trpc/react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Zap, ChevronRight, MapPin, Clock, History } from "lucide-react";
+import { Calendar, Zap, ChevronRight, MapPin, Clock, History, RefreshCw } from "lucide-react";
 
 export default function AssessmentsPage() {
   const [limit] = useState(50);
-  const { data: assessments, isLoading } = api.assessment.getHistory.useQuery({ limit });
+  const { data: assessments, isLoading, refetch, isFetching } = api.assessment.getHistory.useQuery({ limit });
+  const assessmentCount = assessments?.length ?? 0;
 
   return (
     <motion.div
@@ -24,12 +25,21 @@ export default function AssessmentsPage() {
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
           <History className="h-5 w-5 text-primary" />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Assessment History</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             View all solar assessments you have run.
           </p>
+          {!isLoading && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {assessmentCount.toLocaleString()} assessment{assessmentCount === 1 ? "" : "s"} tracked in your pipeline.
+            </p>
+          )}
         </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="h-8 gap-1.5 text-xs font-semibold">
+          <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
       </div>
 
       {isLoading ? (
@@ -72,12 +82,20 @@ export default function AssessmentsPage() {
                   Start by exploring the map and assessing a building&rsquo;s solar potential.
                 </p>
               </div>
-              <Link href="/map">
-                <Button className="h-9 rounded-full px-5 text-xs font-semibold transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.97]">
-                  <MapPin className="mr-1.5 h-3.5 w-3.5" />
-                  Go to Map
-                </Button>
-              </Link>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Link href="/map">
+                  <Button className="h-9 rounded-full px-5 text-xs font-semibold transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.97]">
+                    <MapPin className="mr-1.5 h-3.5 w-3.5" />
+                    Go to Map
+                  </Button>
+                </Link>
+                <Link href="/opportunities">
+                  <Button variant="outline" className="h-9 rounded-full px-5 text-xs font-semibold transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.97]">
+                    <ChevronRight className="mr-1.5 h-3.5 w-3.5" />
+                    View Opportunities
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>

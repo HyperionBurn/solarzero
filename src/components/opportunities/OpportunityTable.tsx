@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ChevronRight, Download, Zap, Info, Loader2, CheckSquare, Square, Upload, AlertCircle, X } from "lucide-react";
@@ -51,9 +51,10 @@ interface OpportunityTableProps {
   isLoading: boolean;
   refetch: () => void;
   refetchStats: () => void;
+  onClearFilters?: () => void;
 }
 
-export function OpportunityTable({ opportunities, isLoading, refetch, refetchStats }: OpportunityTableProps) {
+export function OpportunityTable({ opportunities, isLoading, refetch, refetchStats, onClearFilters }: OpportunityTableProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkAssessing, setIsBulkAssessing] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
@@ -62,7 +63,8 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
   const rescoreOpportunity = api.opportunity.rescore.useMutation();
 
   const handleSelectAll = () => {
-    if (selectedIds.length === opportunities.length) {
+    const visibleSelectedIds = selectedIds.filter((id) => opportunities.some((o) => o.id === id));
+    if (visibleSelectedIds.length === opportunities.length && opportunities.length > 0) {
       setSelectedIds([]);
     } else {
       setSelectedIds(opportunities.map((o) => o.id));
@@ -110,6 +112,17 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ success: boolean; count: number; error?: string } | null>(null);
   const importContactsCsv = api.opportunity.importContactsCsv.useMutation();
+
+  const escapeCsvValue = (value: string | number | boolean | null | undefined) => {
+    const text = value === null || value === undefined ? "" : String(value);
+    return `"${text.replace(/"/g, '""').replace(/\r?\n/g, " ")}"`;
+  };
+
+  useEffect(() => {
+    if (!importResult) return;
+    const timer = window.setTimeout(() => setImportResult(null), 6000);
+    return () => window.clearTimeout(timer);
+  }, [importResult]);
 
   const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -163,7 +176,7 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
     const rows = opportunities.map((o) => [
       o.id,
       o.buildingId,
-      `"${o.building.address}"`,
+      o.building.address,
       o.building.lat,
       o.building.lng,
       o.building.buildingType || "unknown",
@@ -179,17 +192,18 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
       o.building.assessment?.npv25yrAed || "",
       o.building.assessment?.paybackYears || "",
       o.confidence,
-    ]);
+    ].map((value) => escapeCsvValue(value)));
 
     const csvContent = [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `solarzero_opportunities_export_${Date.now()}.csv`);
+    link.setAttribute("download", `solarzero_opportunities_${opportunities.length}_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const getBandBadgeClass = (band: string) => {
@@ -225,16 +239,32 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
   const unassessedSelectedCount = opportunities
     .filter((o) => selectedIds.includes(o.id))
     .filter((o) => !o.building.assessment).length;
+  const visibleSelectedCount = selectedIds.filter((id) => opportunities.some((o) => o.id === id)).length;
+  const allVisibleSelected = opportunities.length > 0 && visibleSelectedCount === opportunities.length;
 
   return (
     <div className="space-y-4">
       {/* Bulk Actions and Export Toolbar */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          {selectedIds.length > 0 && (
-            <span className="text-xs font-semibold text-muted-foreground">
-              {selectedIds.length} selected
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground">
+            {opportunities.length.toLocaleString()} visible
+          </span>
+          {visibleSelectedCount > 0 && (
+            <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-foreground">
+              {visibleSelectedCount} selected
             </span>
+          )}
+          {visibleSelectedCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds([])}
+              className="h-8 text-xs font-semibold"
+              type="button"
+            >
+              Clear selection
+            </Button>
           )}
           {unassessedSelectedCount > 0 && (
             <Button
@@ -243,6 +273,7 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
               onClick={handleBulkAssess}
               disabled={isBulkAssessing}
               className="h-8 gap-1.5 text-xs font-semibold"
+              type="button"
             >
               {isBulkAssessing ? (
                 <>
@@ -266,6 +297,7 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
             onClick={() => document.getElementById("csv-contact-import-input")?.click()}
             disabled={isImporting}
             className="h-8 gap-1.5 text-xs font-semibold cursor-pointer"
+            type="button"
           >
             {isImporting ? (
               <>
@@ -293,12 +325,16 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
             onClick={exportToCsv}
             disabled={opportunities.length === 0}
             className="h-8 gap-1.5 text-xs font-semibold cursor-pointer"
+            type="button"
           >
             <Download className="h-3.5 w-3.5" />
-            Export CSV
+            Export CSV ({opportunities.length})
           </Button>
         </div>
       </div>
+      <p className="text-[11px] text-muted-foreground">
+        Export downloads the rows currently shown in the table.
+      </p>
 
       {/* Import Feedback Alert Banner */}
       {importResult && (
@@ -328,6 +364,7 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
           )}
           <button
             onClick={() => setImportResult(null)}
+            type="button"
             className="text-muted-foreground hover:text-foreground cursor-pointer"
           >
             <X className="h-4 w-4" />
@@ -343,8 +380,8 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
               <thead>
                 <tr className="border-b border-border/40 bg-muted/20">
                   <th className="w-10 px-4 py-3 text-left">
-                    <button onClick={handleSelectAll} className="text-muted-foreground hover:text-foreground">
-                      {selectedIds.length === opportunities.length && opportunities.length > 0 ? (
+                    <button type="button" onClick={handleSelectAll} aria-label="Select all visible opportunities" className="text-muted-foreground hover:text-foreground">
+                      {allVisibleSelected ? (
                         <CheckSquare className="h-4 w-4 text-teal-600" />
                       ) : (
                         <Square className="h-4 w-4" />
@@ -378,8 +415,23 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
                         <Info className="h-6 w-6 text-muted-foreground" />
                         <span className="font-semibold text-sm">No opportunities found</span>
                         <span className="text-xs text-muted-foreground max-w-md">
-                          No opportunities match the selected filters. Scan a UAE area to discover buildings, score rooftop potential, and build your solar prospecting pipeline.
+                          No opportunities match the current filters. Reset filters, refresh the list, or scan a new UAE area to discover more rooftops.
                         </span>
+                        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+                          {onClearFilters && (
+                            <Button variant="outline" size="sm" onClick={onClearFilters} type="button" className="h-8 text-xs font-semibold">
+                              Reset Filters
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="sm" onClick={refetch} type="button" className="h-8 text-xs font-semibold">
+                            Refresh
+                          </Button>
+                          <Link href="/map">
+                            <Button variant="secondary" size="sm" type="button" className="h-8 text-xs font-semibold">
+                              Open Map
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -402,7 +454,7 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
                       >
                         {/* Checkbox */}
                         <td className="px-4 py-3">
-                          <button onClick={() => handleSelectRow(o.id)} className="text-muted-foreground hover:text-foreground">
+                          <button type="button" onClick={() => handleSelectRow(o.id)} aria-label={`Select opportunity for ${o.building.address}`} className="text-muted-foreground hover:text-foreground">
                             {isSelected ? (
                               <CheckSquare className="h-4 w-4 text-teal-600" />
                             ) : (

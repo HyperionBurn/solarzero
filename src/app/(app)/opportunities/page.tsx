@@ -563,6 +563,7 @@ export default function OpportunitiesDashboard() {
             isLoading={isListLoading}
             refetch={refetchList}
             refetchStats={refetchStats}
+            onClearFilters={handleClearFilters}
           />
         </div>
       </div>

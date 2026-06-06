@@ -20,6 +20,7 @@ export default function MapPage() {
   const [discovering, setDiscovering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [buildingCount, setBuildingCount] = useState<number | null>(null);
+  const [lastSearchLabel, setLastSearchLabel] = useState<string | null>(null);
 
   const scanArea = api.opportunity.scanArea.useMutation();
 
@@ -27,6 +28,7 @@ export default function MapPage() {
     async (result: { place_name: string; center: [number, number] }) => {
       const [lng, lat] = result.center;
       setError(null);
+      setLastSearchLabel(result.place_name);
       setDiscovering(true);
       try {
         const run = await scanArea.mutateAsync({ lat, lng, radius: 300 });
@@ -50,16 +52,32 @@ export default function MapPage() {
     <div className="relative h-full w-full">
       <div className="absolute left-2 right-2 top-2 z-20 sm:left-4 sm:right-auto sm:top-4">
         <h1 className="text-lg font-bold text-white drop-shadow-lg sm:text-2xl">SolarZero Atlas</h1>
+        <p className="mt-1 max-w-md text-[11px] leading-relaxed text-white/80 drop-shadow-sm">
+          Search a UAE location, scan a 300m radius, and turn the map into a live discovery queue.
+        </p>
         {discovering && (
           <div className="mt-2 flex items-center gap-2 rounded-md bg-black/60 px-3 py-1.5 text-xs text-white backdrop-blur">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Scanning & scoring area...
+            Scanning & scoring {lastSearchLabel ? `${lastSearchLabel}...` : "area..."}
           </div>
         )}
         {!discovering && buildingCount !== null && (
           <div className="mt-2 flex items-center gap-2 rounded-md bg-black/60 px-3 py-1.5 text-xs text-white backdrop-blur">
             <Building2 className="h-3 w-3" />
             {buildingCount} building{buildingCount !== 1 ? "s" : ""} scored
+            {lastSearchLabel && <span className="text-white/70">in {lastSearchLabel}</span>}
+            <button
+              type="button"
+              onClick={() => {
+                setBuildingCount(null);
+                setError(null);
+                setLastSearchLabel(null);
+                setFlyTo(null);
+              }}
+              className="ml-1 rounded px-1.5 py-0.5 text-[10px] font-semibold text-white/80 hover:bg-white/10 hover:text-white"
+            >
+              Clear
+            </button>
           </div>
         )}
         {error && (
