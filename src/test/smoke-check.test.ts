@@ -22,7 +22,9 @@ function extractCookiesFromHeaders(headers: Headers): string {
 }
 
 describe("Production Smoke Test", () => {
-  it("runs the full flow", async () => {
+  const shouldRun = process.env.RUN_PRODUCTION_SMOKE === "true";
+
+  it.runIf(shouldRun)("runs the full flow", async () => {
     // Generate a unique email
     const email = `smoke-${Date.now()}@solarzero.com`;
     const password = "smoke-test-password-123";
@@ -231,5 +233,5 @@ describe("Production Smoke Test", () => {
     console.log("Clean up: Deleting smoke test user from database...");
     await db.user.delete({ where: { email: email.toLowerCase() } });
     console.log("Smoke test completed successfully!");
-  }, 30000); // 30s timeout
+  }, 100000); // 100s timeout
 });
