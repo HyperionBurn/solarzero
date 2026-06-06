@@ -100,7 +100,8 @@ describe("Production Smoke Test", () => {
     console.log("Login Response Status:", loginRes.status, "Text:", loginText.slice(0, 1000));
     expect(loginRes.status).toBe(200);
 
-    const loginData = JSON.parse(loginText);
+    const loginData = JSON.parse(loginText) as { url: string };
+    expect(loginData.url).toContain("opportunities");
     const sessionCookies = extractCookiesFromHeaders(loginRes.headers);
     console.log("Session Cookies:", sessionCookies);
     expect(sessionCookies).toContain("session-token");

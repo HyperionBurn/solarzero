@@ -21,6 +21,7 @@ model Building {
   assessment   Assessment?
   proposals    Proposal[]
   opportunity  Opportunity?
+  discoveryCandidates DiscoveryCandidate[]
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
@@ -48,6 +49,7 @@ model Opportunity {
   scores                OpportunityScore[]
   evidence              SolarizationEvidence[]
   notes                 OpportunityNote[]
+  discoveryCandidates DiscoveryCandidate[]
 
   @@index([scoreBand, scoreTotal])
   @@index([status])
@@ -264,4 +266,68 @@ model ConnectorSignal {
   @@index([entityType, entityId])
   @@index([signalType])
   @@index([connectorId, fetchedAt])
+}
+
+model ScanCampaign {
+  id              String      @id @default(cuid())
+  name            String
+  emirate         String?
+  status          String      @default("draft") // draft, pending, running, completed, failed, paused
+  boundsJson      Json?       // Bounding box or coordinates
+  filtersJson     Json?       // Bounding filters (e.g. min area, building types)
+  createdBy       String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  startedAt       DateTime?
+  completedAt     DateTime?
+  tiles           ScanTile[]
+  candidates      DiscoveryCandidate[]
+}
+
+model ScanTile {
+  id              String      @id @default(cuid())
+  campaignId      String
+  campaign        ScanCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  status          String      @default("pending") // pending, running, completed, failed
+  boundsJson      Json        // Bounding box coordinates for this specific tile
+  attemptCount    Int         @default(0)
+  buildingsFound  Int         @default(0)
+  error           String?     @db.Text
+  lockedAt        DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  candidates      DiscoveryCandidate[]
+
+  @@index([campaignId])
+  @@index([status])
+}
+
+model DiscoveryCandidate {
+  id              String      @id @default(cuid())
+  campaignId      String?
+  campaign        ScanCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  scanTileId      String?
+  tile            ScanTile?     @relation(fields: [scanTileId], references: [id], onDelete: SetNull)
+  buildingId      String?
+  building        Building?     @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+  opportunityId   String?
+  opportunity     Opportunity?  @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  sourceId        String      // e.g. "osm"
+  sourceKey       String?     // e.g. osmId "123456"
+  lat             Float
+  lng             Float
+  geometryJson    Json?
+  payloadJson     Json?
+  confidence      Float       @default(0.5)
+  status          String      @default("new") // new, processed, duplicate, ignored
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([campaignId])
+  @@index([scanTileId])
+  @@index([buildingId])
+  @@index([opportunityId])
+  @@index([sourceId, sourceKey])
+  @@unique([sourceId, sourceKey]) // Deduplication constraint
 }
