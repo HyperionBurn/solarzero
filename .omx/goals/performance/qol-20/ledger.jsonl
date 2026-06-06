@@ -1,2 +1,4 @@
 {"ts":"2026-06-06T13:29:07.302Z","event":"workflow_created","status":"created","message":"Performance goal created with evaluator contract"}
 {"ts":"2026-06-06T13:29:13.546Z","event":"goal_handoff_emitted","status":"in_progress","message":"Emitted model-facing Codex goal handoff; shell command did not mutate Codex goal state"}
+{"ts":"2026-06-06T13:58:28.886Z","event":"validation_passed","status":"validation_passed","validationStatus":"pass","evidence":"npm run lint, npm run type-check, npm run test:run, npm run build all passed; Vercel production deploy completed and aliased to https://solarzero.vercel.app"}
+{"ts":"2026-06-06T13:59:50.350Z","event":"goal_completed","status":"complete","evidence":"npm run lint, npm run type-check, npm run test:run, npm run build all passed; Vercel production deploy completed and aliased to https://solarzero.vercel.app"}

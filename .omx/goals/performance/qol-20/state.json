@@ -3,9 +3,9 @@
   "workflow": "performance-goal",
   "slug": "qol-20",
   "objective": "Deliver 20 user-facing quality-of-life improvements across SolarZero without regressing existing flows",
-  "status": "in_progress",
+  "status": "complete",
   "createdAt": "2026-06-06T13:29:07.302Z",
-  "updatedAt": "2026-06-06T13:29:13.546Z",
+  "updatedAt": "2026-06-06T13:59:50.350Z",
   "evaluator": {
     "command": "npm run lint && npm run type-check && npm run test:run && npm run build",
     "contract": "PASS when all four commands succeed, the 20-item improvement checklist is fully completed, and no production-smoke blockers remain"
@@ -15,5 +15,11 @@
     "ledger": ".omx/goals/performance/qol-20/ledger.jsonl",
     "evaluator": ".omx/goals/performance/qol-20/evaluator.md"
   },
-  "startedAt": "2026-06-06T13:29:13.546Z"
+  "startedAt": "2026-06-06T13:29:13.546Z",
+  "lastValidation": {
+    "status": "pass",
+    "evidence": "npm run lint, npm run type-check, npm run test:run, npm run build all passed; Vercel production deploy completed and aliased to https://solarzero.vercel.app",
+    "recordedAt": "2026-06-06T13:58:28.886Z"
+  },
+  "completedAt": "2026-06-06T13:59:50.350Z"
 }
