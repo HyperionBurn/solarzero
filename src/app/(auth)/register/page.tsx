@@ -52,6 +52,7 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     if (!validate()) return;
     setError("");
     setLoading(true);
@@ -69,7 +70,11 @@ export default function RegisterPage() {
       router.refresh();
     } catch (err) {
       console.error("Registration error:", err);
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Registration failed because the server did not respond cleanly.",
+      );
     } finally {
       setLoading(false);
     }

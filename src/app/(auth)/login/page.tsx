@@ -23,19 +23,23 @@ export default function LoginPage() {
     if (authError === "missing_token") return "Verification link is missing.";
     if (authError === "invalid_token") return "Verification link is invalid or expired.";
     if (authError === "verification_failed") return "Verification failed. Please try again.";
+    if (authError === "SessionRequired") return "Please sign in to continue.";
     return "";
   });
   const [loading, setLoading] = useState(false);
   const [success] = useState(() => {
     if (searchParams.get("verified") === "true") {
       return emailFromQuery
-        ? `Email verified for ${emailFromQuery}. You can now sign in.`
-        : "Email verified. You can now sign in.";
+        ? `Email verified for ${emailFromQuery}. Sign in once and we will open your opportunity workspace.`
+        : "Email verified. Sign in once and we will open your opportunity workspace.";
     }
     if (searchParams.get("registered") === "true") {
       return emailFromQuery
         ? `Registration successful for ${emailFromQuery}. Please verify your email before signing in.`
         : "Registration successful. Please verify your email before signing in.";
+    }
+    if (searchParams.get("signedOut") === "true") {
+      return "You have been signed out safely.";
     }
     return "";
   });
@@ -52,6 +56,7 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError("");
     if (!validate()) return;
     setLoading(true);
@@ -65,9 +70,14 @@ export default function LoginPage() {
 
       if (!result || !result.ok || result.error || !result.url) {
         if (result?.error === "CredentialsSignin" || result?.error?.includes("CredentialsSignin")) {
-          setError("Invalid email or password, or your email has not been verified yet.");
+          const refinedStatus = await getLoginStatus(email);
+          setError(
+            refinedStatus === "unverified"
+              ? "This email is registered but not verified yet. Open the verification email, then sign in here."
+              : "Invalid email or password. Check the email, password, and verification email before trying again.",
+          );
         } else {
-          setError(result?.error || "Login failed. Please verify your email and confirm your credentials.");
+          setError(result?.error || "Login failed. Please try again in a moment.");
         }
       } else {
         const destination = result.url;
@@ -76,7 +86,7 @@ export default function LoginPage() {
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError("Login failed. Please try again.");
+      setError("Login failed because the server did not respond cleanly. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -154,4 +164,23 @@ export default function LoginPage() {
       </CardContent>
     </Card>
   );
+}
+
+async function getLoginStatus(email: string) {
+  try {
+    const response = await fetch("/api/auth/login-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok && response.status !== 429) {
+      return "continue";
+    }
+
+    const data = (await response.json()) as { status?: string };
+    return data.status === "unverified" ? "unverified" : "continue";
+  } catch {
+    return "continue";
+  }
 }

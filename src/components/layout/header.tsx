@@ -54,10 +54,11 @@ function getRouteContext(pathname: string) {
 
 export function Header() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const routeContext = getRouteContext(pathname);
   const userName = session?.user?.name ?? null;
   const userEmail = session?.user?.email ?? null;
+  const isLoadingSession = status === "loading";
   const initials =
     userName
       ?.split(" ")
@@ -91,9 +92,11 @@ export function Header() {
 
         <div className="flex items-center gap-3">
           <div className="hidden max-w-[16rem] flex-col items-end text-right sm:flex">
-            <span className="text-sm font-medium leading-tight">{userName ?? "User"}</span>
+            <span className="text-sm font-medium leading-tight">
+              {isLoadingSession ? "Loading session..." : userName ?? "Signed-in workspace"}
+            </span>
             <span className={cn("truncate text-xs text-muted-foreground", !userEmail && "italic")}>
-              {userEmail ?? "user@example.com"}
+              {isLoadingSession ? "Checking access" : userEmail ?? "Session details unavailable"}
             </span>
           </div>
           <Avatar className="h-9 w-9 border border-border/60">

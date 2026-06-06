@@ -60,7 +60,7 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkAssessing, setIsBulkAssessing] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{ message: string; detail?: string; type: "success" | "error" } | null>(null);
 
   const runAssessment = api.assessment.run.useMutation();
   const rescoreOpportunity = api.opportunity.rescore.useMutation();
@@ -71,8 +71,8 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
+  const showToast = (message: string, type: "success" | "error", detail?: string) => {
+    setToast({ message, detail, type });
   };
 
   const handleSelectAll = () => {
@@ -99,13 +99,16 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
     const selectedOpps = opportunities.filter((o) => selectedIds.includes(o.id));
     const unassessedOpps = selectedOpps.filter((o) => !o.building.assessment);
 
-    if (unassessedOpps.length === 0) return;
+    if (unassessedOpps.length === 0) {
+      showToast("No new assessments to run.", "success", "Every selected opportunity already has an assessment.");
+      return;
+    }
 
     setIsBulkAssessing(true);
     setBulkProgress({ current: 0, total: unassessedOpps.length });
 
     let successCount = 0;
-    let failedCount = 0;
+    const failures: Array<{ name: string; message: string }> = [];
 
     for (let i = 0; i < unassessedOpps.length; i++) {
       const opp = unassessedOpps[i];
@@ -115,11 +118,15 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
         successCount++;
       } catch (err) {
         console.error(`Bulk assessment failed for building ${opp.buildingId}:`, err);
-        failedCount++;
+        failures.push({
+          name: getBuildingDisplayName(opp.building),
+          message: err instanceof Error ? err.message : "Unknown assessment error",
+        });
       }
       setBulkProgress((p) => ({ ...p, current: i + 1 }));
     }
 
+    const failedCount = failures.length;
     setIsBulkAssessing(false);
     setSelectedIds([]);
     refetch();
@@ -131,9 +138,16 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
           ? `Assessment complete for ${successCount} building${successCount === 1 ? "" : "s"}; ${failedCount} failed.`
           : `Assessment complete for ${successCount} building${successCount === 1 ? "" : "s"}.`,
         failedCount > 0 ? "error" : "success",
+        failedCount > 0
+          ? `First failure: ${failures[0]?.name ?? "Unknown building"} - ${failures[0]?.message ?? "No details"}`
+          : "Dashboard totals and opportunity scores have been refreshed.",
       );
     } else if (failedCount > 0) {
-      showToast("Assessment failed for all selected buildings.", "error");
+      showToast(
+        "Assessment failed for all selected buildings.",
+        "error",
+        `First failure: ${failures[0]?.name ?? "Unknown building"} - ${failures[0]?.message ?? "No details"}`,
+      );
     }
   };
 
@@ -276,7 +290,8 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
       <AnimatePresence>
         {toast && (
           <motion.div
-            role="alert"
+            role={toast.type === "success" ? "status" : "alert"}
+            aria-live={toast.type === "success" ? "polite" : "assertive"}
             initial={{ opacity: 0, x: 24, scale: 0.98 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 24, scale: 0.98 }}
@@ -287,7 +302,10 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
             <div className={`flex items-center gap-2.5 px-4 py-3 text-sm font-medium ${
               toast.type === "success" ? "bg-emerald-50/90 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-200" : "bg-red-50/90 text-red-800 dark:bg-red-950/80 dark:text-red-200"
             }`}>
-              <span className="flex-1">{toast.message}</span>
+              <span className="flex-1">
+                <span className="block">{toast.message}</span>
+                {toast.detail && <span className="mt-0.5 block text-xs font-normal opacity-80">{toast.detail}</span>}
+              </span>
               <button onClick={() => setToast(null)} type="button" className="text-muted-foreground hover:text-foreground">
                 <X className="h-4 w-4" />
               </button>

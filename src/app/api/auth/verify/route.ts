@@ -25,7 +25,10 @@ export async function GET(req: NextRequest) {
       new URL(`/login?verified=true&email=${encodeURIComponent(email)}`, req.nextUrl)
     );
   } catch (error) {
-    logger.error({ err: error }, "Email verification error");
+    logger.error(
+      { err: error, action: "auth.verify_email" },
+      "Email verification error",
+    );
     return NextResponse.redirect(
       new URL("/login?error=verification_failed", req.nextUrl)
     );

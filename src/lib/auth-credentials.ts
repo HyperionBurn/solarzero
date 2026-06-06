@@ -8,6 +8,32 @@ export interface AuthenticatedUser {
   name: string;
 }
 
+export type CredentialAccountStatus =
+  | "missing"
+  | "unverified"
+  | "verified";
+
+export async function getCredentialAccountStatus(
+  emailInput: string,
+): Promise<CredentialAccountStatus> {
+  const email = normalizeEmailAddress(emailInput);
+
+  const user = await db.user.findFirst({
+    where: {
+      email: {
+        equals: email,
+        mode: "insensitive",
+      },
+    },
+    select: {
+      emailVerified: true,
+    },
+  });
+
+  if (!user) return "missing";
+  return user.emailVerified ? "verified" : "unverified";
+}
+
 export async function authorizeCredentials(
   emailInput: string,
   password: string,

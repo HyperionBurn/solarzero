@@ -19,7 +19,7 @@ vi.mock("bcryptjs", () => ({
   },
 }));
 
-import { authorizeCredentials } from "@/lib/auth-credentials";
+import { authorizeCredentials, getCredentialAccountStatus } from "@/lib/auth-credentials";
 
 describe("authorizeCredentials", () => {
   beforeEach(() => {
@@ -68,6 +68,38 @@ describe("authorizeCredentials", () => {
       email: "verified@example.com",
       name: "Verified User",
     });
+  });
+
+  it("reports an unverified account without checking the password", async () => {
+    findFirstMock.mockResolvedValue({
+      emailVerified: null,
+    });
+
+    const result = await getCredentialAccountStatus("  Pending@Example.com ");
+
+    expect(findFirstMock).toHaveBeenCalledWith({
+      where: {
+        email: {
+          equals: "pending@example.com",
+          mode: "insensitive",
+        },
+      },
+      select: {
+        emailVerified: true,
+      },
+    });
+    expect(compareMock).not.toHaveBeenCalled();
+    expect(result).toBe("unverified");
+  });
+
+  it("reports verified and missing account status for login copy", async () => {
+    findFirstMock.mockResolvedValueOnce({
+      emailVerified: new Date(),
+    });
+    await expect(getCredentialAccountStatus("verified@example.com")).resolves.toBe("verified");
+
+    findFirstMock.mockResolvedValueOnce(null);
+    await expect(getCredentialAccountStatus("missing@example.com")).resolves.toBe("missing");
   });
 
   it("rejects incorrect passwords", async () => {

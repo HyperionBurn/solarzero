@@ -32,13 +32,14 @@ const navItems = [
 ];
 
 export function Sidebar() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const pathname = usePathname();
   const [openPath, setOpenPath] = useState<string | null>(null);
   const open = openPath === pathname;
 
   const userName = session?.user?.name ?? null;
   const userEmail = session?.user?.email ?? null;
+  const isLoadingSession = status === "loading";
   const initials =
     userName
       ?.split(" ")
@@ -122,16 +123,18 @@ export function Sidebar() {
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <div className="truncate text-sm font-medium">{userName ?? "User"}</div>
+            <div className="truncate text-sm font-medium">
+              {isLoadingSession ? "Loading session..." : userName ?? "Signed-in workspace"}
+            </div>
             <div className={cn("truncate text-xs text-muted-foreground", !userEmail && "italic")}>
-              {userEmail ?? "user@example.com"}
+              {isLoadingSession ? "Checking access" : userEmail ?? "Session details unavailable"}
             </div>
           </div>
         </div>
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => signOut({ callbackUrl: "/" })}
+          onClick={() => signOut({ callbackUrl: "/login?signedOut=true" })}
           aria-label="Sign out"
           className="shrink-0"
         >

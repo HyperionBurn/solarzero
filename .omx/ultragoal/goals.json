@@ -1,7 +1,7 @@
 {
   "version": 1,
   "createdAt": "2026-06-06T15:58:54.477Z",
-  "updatedAt": "2026-06-06T16:03:25.153Z",
+  "updatedAt": "2026-06-06T16:17:35.266Z",
   "briefPath": ".omx/ultragoal/brief.md",
   "goalsPath": ".omx/ultragoal/goals.json",
   "ledgerPath": ".omx/ultragoal/ledger.jsonl",
@@ -23,12 +23,15 @@
       "id": "G002-implement-refinements-story-by-story",
       "title": "Batch A: Production trust, auth, and core flow",
       "objective": "Implement refinements 1-10 from .omx/plans/solarzero-100-refinements-backlog.md: production trust, auth, core flow feedback, and verified sign-in confidence. Commit and push coherent fixes with targeted tests.",
-      "status": "pending",
-      "attempt": 0,
+      "status": "complete",
+      "attempt": 1,
       "createdAt": "2026-06-06T15:58:54.477Z",
-      "updatedAt": "2026-06-06T16:02:11.258Z",
+      "updatedAt": "2026-06-06T16:17:35.266Z",
       "steeringEvidence": "Created .omx/plans/solarzero-100-refinements-backlog.md with exactly 100 numbered refinements grouped into ten batches.",
-      "steeringRationale": "The generated G002 story was too broad to execute safely; narrowing it to Batch A makes the durable run incremental and verifiable."
+      "steeringRationale": "The generated G002 story was too broad to execute safely; narrowing it to Batch A makes the durable run incremental and verifiable.",
+      "startedAt": "2026-06-06T16:04:04.310Z",
+      "completedAt": "2026-06-06T16:17:35.266Z",
+      "evidence": "Batch A refinements 1-10 implemented: login verified/unverified copy via rate-limited login-status route, duplicate-submit guards, safer sign-out callback, structured auth logs, authenticated health smoke procedure, session fallback labels, assessment success/failure toast details, and credential status tests. Verification passed: npm run lint; npm run type-check; npm run test:run (114 passed, 1 skipped); npm run build."
     },
     {
       "id": "G003-add-update-tests-for-critical-behavi",

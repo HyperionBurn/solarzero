@@ -1,4 +1,4 @@
-import { publicProcedure, router } from "../trpc";
+import { protectedProcedure, publicProcedure, router } from "../trpc";
 import { db } from "@/lib/db";
 import { redis, redisIsMock } from "@/lib/redis";
 
@@ -8,6 +8,23 @@ export const healthRouter = router({
    */
   status: publicProcedure.query(() => {
     return { status: "ok" as const };
+  }),
+
+  /**
+   * Authenticated smoke check for production verification.
+   */
+  authenticated: protectedProcedure.query(({ ctx }) => {
+    const user = ctx.session.user;
+
+    return {
+      status: "ok" as const,
+      authenticated: true,
+      user: {
+        hasId: Boolean(user?.id),
+        email: user?.email ?? null,
+      },
+      timestamp: new Date().toISOString(),
+    };
   }),
 
   /**

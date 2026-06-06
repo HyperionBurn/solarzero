@@ -9,7 +9,6 @@ import { normalizeEmailAddress } from "@/lib/email/address";
 
 export async function POST(req: NextRequest) {
   try {
-    // Rate limiting
     const ip = getClientIp(req.headers);
     let success = true;
     let remaining = 0;
@@ -19,7 +18,10 @@ export async function POST(req: NextRequest) {
       success = rateLimit.success;
       remaining = rateLimit.remaining;
     } catch (err) {
-      logger.warn({ err }, "Registration rate limit unavailable, allowing request");
+      logger.warn(
+        { err, action: "auth.register.rate_limit" },
+        "Registration rate limit unavailable, allowing request",
+      );
     }
 
     if (!success) {
@@ -80,8 +82,11 @@ export async function POST(req: NextRequest) {
       const verificationUrl = getVerificationUrl(token);
       await sendVerificationEmail(normalizedEmail, name, verificationUrl);
     } catch (err) {
-      // Don't fail registration if email sending fails
-      logger.warn({ err }, "Failed to send verification email");
+      // Do not fail registration if the mail provider has a transient issue.
+      logger.warn(
+        { err, action: "auth.register.send_verification" },
+        "Failed to send verification email",
+      );
     }
 
     return NextResponse.json(
@@ -94,7 +99,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (err) {
-    logger.error({ err }, "Registration failed");
+    logger.error({ err, action: "auth.register" }, "Registration failed");
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
