@@ -22,6 +22,8 @@ import {
   Download,
   Share2,
   Copy,
+  ExternalLink,
+  MapPin,
   FileCheck,
   FileText,
   Sparkles,
@@ -132,6 +134,32 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  const copyText = async (text: string, successMessage: string, errorMessage: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(successMessage, "success");
+    } catch {
+      showToast(errorMessage, "error");
+    }
+  };
+
+  const handleCopyAddress = () => {
+    copyText(building.address, "Address copied to clipboard.", "Failed to copy address.");
+  };
+
+  const handleCopyCoordinates = () => {
+    copyText(
+      `${building.lat.toFixed(5)}, ${building.lng.toFixed(5)}`,
+      "Coordinates copied to clipboard.",
+      "Failed to copy coordinates.",
+    );
+  };
+
+  const handleOpenMap = () => {
+    const mapUrl = `https://www.openstreetmap.org/?mlat=${building.lat}&mlon=${building.lng}#map=18/${building.lat}/${building.lng}`;
+    window.open(mapUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleRunAssessment = async () => {
@@ -447,65 +475,81 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-5 border-b border-border/40 pb-5">
-        <div className="min-w-0 flex-1">
-          <button
-            onClick={() => router.push("/opportunities")}
-            className="mb-3 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
-          >
-            <ArrowLeft className="h-3 w-3" /> Back to pipeline
-          </button>
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">{building.address}</h1>
-            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${getBandBadgeClass(opportunity.scoreBand)}`}>
-              BAND {opportunity.scoreBand}
-            </span>
-            {opportunity.rankSnapshots && opportunity.rankSnapshots[0] && (
-              <span className="inline-flex items-center rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20 px-2.5 py-0.5 text-xs font-bold">
-                Rank #{opportunity.rankSnapshots[0].rankGlobal}
+      <div className="rounded-3xl border border-border/40 bg-card/70 p-4 shadow-sm backdrop-blur-sm">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="min-w-0 flex-1">
+            <button
+              onClick={() => router.push("/opportunities")}
+              className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-transparent px-2 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground transition-all hover:border-border/60 hover:bg-muted hover:text-foreground"
+            >
+              <ArrowLeft className="h-3 w-3" /> Back to pipeline
+            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="min-w-0 text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">{building.address}</h1>
+              <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${getBandBadgeClass(opportunity.scoreBand)}`}>
+                BAND {opportunity.scoreBand}
               </span>
+              {opportunity.rankSnapshots && opportunity.rankSnapshots[0] && (
+                <span className="inline-flex items-center rounded-full border border-teal-500/20 bg-teal-500/10 px-2.5 py-0.5 text-xs font-bold text-teal-700 dark:text-teal-300">
+                  Rank #{opportunity.rankSnapshots[0].rankGlobal}
+                </span>
+              )}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span>Score: <strong className="text-foreground">{opportunity.scoreTotal}</strong></span>
+              <span>&middot;</span>
+              <span>Confidence: <strong className="text-foreground">{(opportunity.confidence * 100).toFixed(0)}%</strong></span>
+              <span>&middot;</span>
+              <span>Next Action: <strong className="capitalize text-teal-600 dark:text-teal-400">{opportunity.nextAction.replace(/_/g, " ")}</strong></span>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Button onClick={handleCopyAddress} variant="outline" size="sm" className="h-8 gap-1.5 rounded-full px-3 text-[11px] font-semibold">
+                <Copy className="h-3.5 w-3.5" />
+                Copy address
+              </Button>
+              <Button onClick={handleCopyCoordinates} variant="outline" size="sm" className="h-8 gap-1.5 rounded-full px-3 text-[11px] font-semibold">
+                <MapPin className="h-3.5 w-3.5" />
+                Copy coords
+              </Button>
+              <Button onClick={handleOpenMap} variant="outline" size="sm" className="h-8 gap-1.5 rounded-full px-3 text-[11px] font-semibold">
+                <ExternalLink className="h-3.5 w-3.5" />
+                Open in maps
+              </Button>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={handleRunAssessment}
+              disabled={assessmentLoading || runAssessment.isPending}
+              variant="secondary"
+              className="h-9 gap-1.5 rounded-full px-4 text-xs font-semibold"
+            >
+              {assessmentLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+              {assessment ? "Re-run Assessment" : "Run SolarZero Assessment"}
+            </Button>
+
+            {assessment && (
+              <>
+                <Button
+                  onClick={handleExportProposal}
+                  disabled={exportLoading}
+                  className="h-9 gap-1.5 rounded-full px-4 text-xs font-semibold"
+                >
+                  {exportLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                  View Proposal PDF
+                </Button>
+                <Button onClick={handleCopyLink} variant="outline" className="h-9 gap-1.5 rounded-full px-3 text-xs font-semibold">
+                  <Copy className="h-3.5 w-3.5" />
+                  Copy Link
+                </Button>
+                <Button onClick={handleShareProposal} disabled={shareLoading} variant="outline" className="h-9 rounded-full px-3">
+                  {shareLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
+                </Button>
+              </>
             )}
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span>Score: <strong className="text-foreground">{opportunity.scoreTotal}</strong></span>
-            <span>&middot;</span>
-            <span>Confidence: <strong className="text-foreground">{(opportunity.confidence * 100).toFixed(0)}%</strong></span>
-            <span>&middot;</span>
-            <span>Next Action: <strong className="text-teal-600 dark:text-teal-400 capitalize">{opportunity.nextAction.replace(/_/g, " ")}</strong></span>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            onClick={handleRunAssessment}
-            disabled={assessmentLoading || runAssessment.isPending}
-            variant="secondary"
-            className="h-9 gap-1.5 text-xs font-semibold"
-          >
-            {assessmentLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-            {assessment ? "Re-run Assessment" : "Run SolarZero Assessment"}
-          </Button>
-
-          {assessment && (
-            <>
-              <Button
-                onClick={handleExportProposal}
-                disabled={exportLoading}
-                className="h-9 gap-1.5 text-xs font-semibold"
-              >
-                {exportLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                View Proposal PDF
-              </Button>
-              <Button onClick={handleCopyLink} variant="outline" className="h-9 gap-1.5 px-3 text-xs font-semibold">
-                <Copy className="h-3.5 w-3.5" />
-                Copy Link
-              </Button>
-              <Button onClick={handleShareProposal} disabled={shareLoading} variant="outline" className="h-9 px-3">
-                {shareLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
-              </Button>
-            </>
-          )}
         </div>
       </div>
 
@@ -514,20 +558,22 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
         {/* Left Side: Detail Tabs and Forms */}
         <div className="space-y-6 lg:col-span-3">
           {/* Tabs Navigation */}
-          <div className="flex border-b border-border/40">
-            {(["intel", "occupancy", "finance", "3d", "notes"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`border-b-2 px-4 py-2.5 text-sm font-semibold capitalize transition-all ${
-                  activeTab === tab
-                    ? "border-teal-500 text-teal-600 dark:text-teal-400"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tab === "intel" ? "Opportunity Intelligence" : tab === "occupancy" ? "Occupancy & Contacts" : tab === "finance" ? "Financials" : tab === "3d" ? "3D Visualization" : "Activity & Notes"}
-              </button>
-            ))}
+          <div className="sticky top-0 z-20 -mx-1 rounded-2xl border border-border/40 bg-background/88 px-1 py-1.5 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
+            <div className="flex gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {(["intel", "occupancy", "finance", "3d", "notes"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`min-w-max rounded-full px-4 py-2 text-sm font-semibold capitalize transition-all duration-200 ${
+                    activeTab === tab
+                      ? "bg-teal-600 text-white shadow-sm"
+                      : "border border-transparent text-muted-foreground hover:border-border/60 hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {tab === "intel" ? "Opportunity Intelligence" : tab === "occupancy" ? "Occupancy & Contacts" : tab === "finance" ? "Financials" : tab === "3d" ? "3D Visualization" : "Activity & Notes"}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Tab Content Panels */}
@@ -1382,15 +1428,20 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
         {/* Right Side: Sidebar, Sizing Constraints & Workflow selectors */}
         <div className="space-y-5">
           {/* Workflow Status panel */}
-          <Card className="p-4 border-border/40 space-y-4 shadow-sm">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pipeline Controls</h3>
+          <Card className="space-y-4 border-border/40 p-4 shadow-sm">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Pipeline Controls</h3>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                Keep the lead moving from discovery to verification, enrichment, and conversion without losing context.
+              </p>
+            </div>
             
             <div>
               <label className="text-[11px] font-semibold text-muted-foreground">Workflow Stage</label>
               <select
                 value={opportunity.status}
                 onChange={(e) => handleStatusChange(e.target.value)}
-                className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2 py-1.5 text-xs outline-none focus:border-teal-500 capitalize text-foreground"
+                className="mt-1 w-full rounded-xl border border-border/60 bg-background/70 px-3 py-2 text-xs capitalize text-foreground outline-none transition-colors focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
               >
                 <option value="new">New Opportunity</option>
                 <option value="needs_verification">Needs Verification</option>
@@ -1407,7 +1458,7 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
               <select
                 value={opportunity.priority}
                 onChange={(e) => handlePriorityChange(e.target.value)}
-                className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2 py-1.5 text-xs outline-none focus:border-teal-500 capitalize"
+                className="mt-1 w-full rounded-xl border border-border/60 bg-background/70 px-3 py-2 text-xs capitalize outline-none transition-colors focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
               >
                 <option value="unreviewed">Unreviewed</option>
                 <option value="low">Low Priority</option>
@@ -1420,10 +1471,13 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
 
           {/* Building Info Panel */}
           <Card className="border-border/40 shadow-sm">
-            <div className="border-b border-border/40 px-4 py-3 bg-muted/10">
+            <div className="border-b border-border/40 bg-muted/10 px-4 py-3">
               <h3 className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground">Opportunity Metadata</h3>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                Core building details used to rank, verify, and hand off the lead.
+              </p>
             </div>
-            <div className="px-4 py-1.5">
+            <div className="px-4 py-2">
               <SidebarRow label="OSM ID" value={building.osmId ?? "N/A"} />
               <SidebarRow label="Emirate" value={emirateInfo.name} />
               <SidebarRow label="Utility" value={emirateInfo.utility} />
@@ -1453,18 +1507,18 @@ function SubScoreCard({ label, score, weight }: { label: string; score: number; 
 
 function NoAssessmentEmptyState({ onRun, loading }: { onRun: () => void; loading: boolean }) {
   return (
-    <Card className="px-6 py-12 border-border/40">
+    <Card className="border-border/40 px-6 py-12">
       <div className="flex flex-col items-center justify-center gap-4 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-600/10">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-600/10 ring-1 ring-teal-600/10">
           <Zap className="h-7 w-7 text-teal-600 dark:text-teal-400" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold">Technical/Financial Assessment Not Run</h3>
+          <h3 className="text-sm font-semibold">Technical and financial analysis has not been run yet</h3>
           <p className="mt-1 text-xs text-muted-foreground max-w-sm">
-            Generate panel arrays, capex projections, savings, NPV, and payback periods using our UAE hybrid engine.
+            Run the SolarZero engine to generate panel arrays, capex, savings, NPV, payback, and a cleaner proposal handoff.
           </p>
         </div>
-        <Button onClick={onRun} disabled={loading} className="h-9 gap-1.5 text-xs font-semibold rounded-full px-5">
+        <Button onClick={onRun} disabled={loading} className="h-9 gap-1.5 rounded-full px-5 text-xs font-semibold">
           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
           Run SolarZero Assessment
         </Button>

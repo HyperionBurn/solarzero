@@ -12,7 +12,7 @@ const Solar3DViewer = dynamic(() => import("@/components/viewer/Solar3DViewer").
   ssr: false,
   loading: () => <Skeleton className="h-[400px] w-full rounded-lg" />,
 });
-import { Loader2, Download, Play, ArrowLeft, Zap, Sun, DollarSign, TrendingUp, Clock, Leaf, Share2, FileText, FileCheck, Sparkles, Building2 } from "lucide-react";
+import { Loader2, Download, Play, ArrowLeft, Zap, Sun, DollarSign, TrendingUp, Clock, Leaf, Share2, FileText, FileCheck, Sparkles, Building2, Copy, ExternalLink, MapPin } from "lucide-react";
 import { getEmirateConfig } from "@/lib/regulatory/emirates";
 import { calculateAllFinancingModels, type FinancingModel } from "@/lib/engine/financing";
 import { calculateSensitivity, CONSERVATIVE, EXPECTED, OPTIMISTIC, type SensitivityVariables } from "@/lib/engine/sensitivity";
@@ -40,6 +40,15 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  const copyText = async (text: string, successMessage: string, errorMessage: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(successMessage, "success");
+    } catch {
+      showToast(errorMessage, "error");
+    }
   };
 
   const { data: building, isLoading: buildingLoading, error: buildingError } = api.building.getById.useQuery({ id });
@@ -107,6 +116,26 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
     } finally {
       setShareLoading(false);
     }
+  };
+
+  const handleCopyAddress = () => {
+    if (!building) return;
+    copyText(building.address, "Address copied to clipboard.", "Failed to copy address.");
+  };
+
+  const handleCopyCoordinates = () => {
+    if (!building) return;
+    copyText(
+      `${building.lat.toFixed(5)}, ${building.lng.toFixed(5)}`,
+      "Coordinates copied to clipboard.",
+      "Failed to copy coordinates.",
+    );
+  };
+
+  const handleOpenMap = () => {
+    if (!building) return;
+    const mapUrl = `https://www.openstreetmap.org/?mlat=${building.lat}&mlon=${building.lng}#map=18/${building.lat}/${building.lng}`;
+    window.open(mapUrl, "_blank", "noopener,noreferrer");
   };
 
   if (buildingLoading) {
@@ -225,69 +254,85 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
       )}
 
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-5">
-        <div className="min-w-0 flex-1">
-          <button
-            onClick={() => router.push("/map")}
-            className="mb-3 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.97]"
-          >
-            <ArrowLeft className="h-3 w-3" /> Back to Map
-          </button>
-          <h1 className="text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">{building.address}</h1>
-          <div className="mt-3 flex flex-wrap items-center gap-2.5">
-            <span className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] font-semibold uppercase tracking-[0.05em] shadow-xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02] ${typeColor}`}>
-              {building.buildingType ?? "Unknown"}
-            </span>
-            {emirateInfo && (
-              <span className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] font-semibold uppercase tracking-[0.05em] shadow-xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02] ${utilityColorClass}`}>
-                {emirateInfo.name} · {emirateInfo.utility}
+      <div className="rounded-3xl border border-border/40 bg-card/70 p-4 shadow-sm backdrop-blur-sm">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div className="min-w-0 flex-1">
+            <button
+              onClick={() => router.push("/map")}
+              className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-transparent px-2 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:border-border/60 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-[0.97]"
+            >
+              <ArrowLeft className="h-3 w-3" /> Back to Map
+            </button>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">{building.address}</h1>
+            <div className="mt-3 flex flex-wrap items-center gap-2.5">
+              <span className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] font-semibold uppercase tracking-[0.05em] shadow-xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02] ${typeColor}`}>
+                {building.buildingType ?? "Unknown"}
               </span>
-            )}
-            {building.roofAreaM2 && (
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                <span className="font-medium tabular-nums">{Math.round(building.roofAreaM2).toLocaleString()}</span> m² roof
-              </span>
-            )}
-            {building.heightMeters && (
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                <span className="font-medium tabular-nums">{building.heightMeters}</span> m height
-              </span>
+              {emirateInfo && (
+                <span className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] font-semibold uppercase tracking-[0.05em] shadow-xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02] ${utilityColorClass}`}>
+                  {emirateInfo.name} · {emirateInfo.utility}
+                </span>
+              )}
+              {building.roofAreaM2 && (
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <span className="font-medium tabular-nums">{Math.round(building.roofAreaM2).toLocaleString()}</span> m² roof
+                </span>
+              )}
+              {building.heightMeters && (
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <span className="font-medium tabular-nums">{building.heightMeters}</span> m height
+                </span>
+              )}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Button onClick={handleCopyAddress} variant="outline" size="sm" className="h-8 gap-1.5 rounded-full px-3 text-[11px] font-semibold">
+                <Copy className="h-3.5 w-3.5" />
+                Copy address
+              </Button>
+              <Button onClick={handleCopyCoordinates} variant="outline" size="sm" className="h-8 gap-1.5 rounded-full px-3 text-[11px] font-semibold">
+                <MapPin className="h-3.5 w-3.5" />
+                Copy coords
+              </Button>
+              <Button onClick={handleOpenMap} variant="outline" size="sm" className="h-8 gap-1.5 rounded-full px-3 text-[11px] font-semibold">
+                <ExternalLink className="h-3.5 w-3.5" />
+                Open in maps
+              </Button>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={handleRunAssessment}
+              disabled={assessmentLoading || runAssessment.isPending}
+              variant="secondary"
+              className="h-9 rounded-full px-4 text-xs font-semibold active:scale-[0.97] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            >
+              {(assessmentLoading || runAssessment.isPending) ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Play className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              {assessment ? "Re-run Assessment" : "Run Assessment"}
+            </Button>
+            {assessment && (
+              <>
+                <Button
+                  onClick={handleExportProposal}
+                  disabled={exportLoading || generateProposal.isPending}
+                  className="h-9 rounded-full px-4 text-xs font-semibold active:scale-[0.97] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                >
+                  {(exportLoading || generateProposal.isPending) ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Download className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  Export Proposal
+                </Button>
+                <Button onClick={handleShareProposal} disabled={shareLoading} variant="outline" className="h-9 rounded-full px-3">
+                  <Share2 className="h-3.5 w-3.5" />
+                </Button>
+              </>
             )}
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={handleRunAssessment}
-            disabled={assessmentLoading || runAssessment.isPending}
-            variant="secondary"
-            className="h-9 rounded-lg px-4 text-xs font-semibold active:scale-[0.97] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-          >
-            {(assessmentLoading || runAssessment.isPending) ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Play className="mr-1.5 h-3.5 w-3.5" />
-            )}
-            {assessment ? "Re-run Assessment" : "Run Assessment"}
-          </Button>
-          {assessment && (
-            <>
-              <Button
-                onClick={handleExportProposal}
-                disabled={exportLoading || generateProposal.isPending}
-                className="h-9 rounded-lg px-4 text-xs font-semibold active:scale-[0.97] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-              >
-                {(exportLoading || generateProposal.isPending) ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Download className="mr-1.5 h-3.5 w-3.5" />
-                )}
-                Export Proposal
-              </Button>
-              <Button onClick={handleShareProposal} disabled={shareLoading} variant="outline" className="h-9 rounded-lg px-3">
-                <Share2 className="h-3.5 w-3.5" />
-              </Button>
-            </>
-          )}
         </div>
       </div>
 
@@ -762,5 +807,3 @@ function SliderRow({
     </div>
   );
 }
-
-
