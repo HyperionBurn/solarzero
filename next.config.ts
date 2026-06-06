@@ -1,11 +1,15 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 import { cleanEnvValue } from "./src/lib/env";
+import path from "path";
 
 const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
   poweredByHeader: false,
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   serverExternalPackages: ["pdfmake", "@foliojs-fork/fontkit"],
   images: {
     remotePatterns: [

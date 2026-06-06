@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
-  if (pathname.startsWith("/api/auth") || pathname.startsWith("/p/")) {
+  if (
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/cron") ||
+    pathname.startsWith("/p/")
+  ) {
     return NextResponse.next();
   }
 
@@ -31,6 +35,8 @@ export function middleware(req: NextRequest) {
       new URL(`/login?callbackUrl=${callbackUrl}`, req.url),
     );
   }
+
+  return NextResponse.next();
 }
 
 export const config = {
