@@ -35,7 +35,7 @@ function getQueueRedis() {
   if (redisInstance) return redisInstance;
 
   const url = optionalEnvValue(process.env.UPSTASH_REDIS_URL);
-  if (!url) {
+  if (!url || url.startsWith("http://") || url.startsWith("https://")) {
     redisInstance = createMockRedis();
     return redisInstance;
   }

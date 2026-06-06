@@ -1,7 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { db } from "@/lib/db";
-import bcrypt from "bcryptjs";
+import { authorizeCredentials } from "@/lib/auth-credentials";
 
 export const authConfig: NextAuthConfig = {
   pages: {
@@ -20,7 +19,7 @@ export const authConfig: NextAuthConfig = {
 
       if (isAuthPage) {
         if (isLoggedIn) {
-          return Response.redirect(new URL("/map", nextUrl));
+          return Response.redirect(new URL("/opportunities", nextUrl));
         }
         return true;
       }
@@ -43,29 +42,10 @@ export const authConfig: NextAuthConfig = {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
-
-        const user = await db.user.findUnique({
-          where: { email: credentials.email as string },
-        });
-
-        if (!user) {
-          return null;
-        }
-
-        const isPasswordValid = await bcrypt.compare(
+        return authorizeCredentials(
+          credentials.email as string,
           credentials.password as string,
-          user.passwordHash
         );
-
-        if (!isPasswordValid) {
-          return null;
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        };
       },
     }),
   ],

@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,10 @@ import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
+  const router = useRouter();
+  const callbackUrlParam = searchParams.get("callbackUrl");
+  const callbackUrl = callbackUrlParam && callbackUrlParam.startsWith("/") ? callbackUrlParam : "/opportunities";
+  const [email, setEmail] = useState(() => searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(() => {
     const authError = searchParams.get("error");
@@ -21,9 +24,11 @@ export default function LoginPage() {
     return "";
   });
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(
-    searchParams.get("verified") === "true" ? "Email verified! You can now sign in." : "",
-  );
+  const [success, setSuccess] = useState(() => {
+    if (searchParams.get("verified") === "true") return "Email verified! You can now sign in.";
+    if (searchParams.get("registered") === "true") return "Registration successful. Please verify your email before signing in.";
+    return "";
+  });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   function validate(): boolean {
@@ -41,11 +46,30 @@ export default function LoginPage() {
     if (!validate()) return;
     setLoading(true);
     try {
-      const result = await signIn("credentials", { email, password, redirect: false });
-      if (result?.error) { setError("Invalid email or password"); }
-      else { window.location.href = "/map"; }
-    } catch (err) { console.error("Login error:", err); setError("Login failed. Please try again."); }
-    finally { setLoading(false); }
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        redirectTo: callbackUrl,
+      });
+
+      if (!result || !result.ok || result.error || !result.url) {
+        if (result?.error === "CredentialsSignin" || result?.error?.includes("CredentialsSignin")) {
+          setError("Invalid email or password, or your email has not been verified yet.");
+        } else {
+          setError(result?.error || "Login failed. Please verify your email and confirm your credentials.");
+        }
+      } else {
+        const destination = result.url;
+        router.replace(destination);
+        router.refresh();
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

@@ -1,6 +1,6 @@
 import { publicProcedure, router } from "../trpc";
 import { db } from "@/lib/db";
-import { redis } from "@/lib/redis";
+import { redis, redisIsMock } from "@/lib/redis";
 
 export const healthRouter = router({
   /**
@@ -36,8 +36,9 @@ export const healthRouter = router({
       const start = Date.now();
       await redis.ping();
       checks.redis = {
-        status: "ok",
+        status: redisIsMock ? "degraded" : "ok",
         latencyMs: Date.now() - start,
+        error: redisIsMock ? "Redis not configured; using in-memory fallback" : undefined,
       };
     } catch (err) {
       checks.redis = {

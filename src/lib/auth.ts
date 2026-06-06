@@ -2,12 +2,15 @@ import NextAuth from "next-auth";
 import { authConfig } from "./auth.config";
 import { normalizeEnvKeys, cleanEnvValue } from "./env";
 
-normalizeEnvKeys("NEXTAUTH_URL", "NEXTAUTH_SECRET");
+normalizeEnvKeys("NEXTAUTH_URL", "AUTH_URL", "NEXTAUTH_SECRET", "AUTH_SECRET");
 
 export const { auth, handlers } = NextAuth({
   ...authConfig,
   trustHost: true,
-  secret: cleanEnvValue(process.env.NEXTAUTH_SECRET) || undefined,
+  secret:
+    cleanEnvValue(process.env.AUTH_SECRET) ||
+    cleanEnvValue(process.env.NEXTAUTH_SECRET) ||
+    undefined,
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

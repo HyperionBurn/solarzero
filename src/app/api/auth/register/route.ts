@@ -5,6 +5,7 @@ import { generateVerificationToken, getVerificationUrl } from "@/lib/email/verif
 import { sendVerificationEmail } from "@/lib/email/send";
 import { registerRateLimit, getClientIp } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { normalizeEmailAddress } from "@/lib/email/address";
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,6 +35,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
+    const normalizedEmail = normalizeEmailAddress(email);
+
     if (password.length < 8) {
       return NextResponse.json(
         { error: "Password must be at least 8 characters" },
@@ -50,7 +53,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existing = await db.user.findUnique({ where: { email } });
+    const existing = await db.user.findFirst({
+      where: {
+        email: {
+          equals: normalizedEmail,
+          mode: "insensitive",
+        },
+      },
+    });
     if (existing) {
       return NextResponse.json(
         { error: "Email already registered" },
@@ -61,14 +71,14 @@ export async function POST(req: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 12);
 
     const user = await db.user.create({
-      data: { name, email, passwordHash },
+      data: { name, email: normalizedEmail, passwordHash },
     });
 
     // Generate verification token and send email
     try {
-      const token = await generateVerificationToken(email);
+      const token = await generateVerificationToken(normalizedEmail);
       const verificationUrl = getVerificationUrl(token);
-      await sendVerificationEmail(email, name, verificationUrl);
+      await sendVerificationEmail(normalizedEmail, name, verificationUrl);
     } catch (err) {
       // Don't fail registration if email sending fails
       logger.warn({ err }, "Failed to send verification email");

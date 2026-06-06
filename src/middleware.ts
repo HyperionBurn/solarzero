@@ -20,13 +20,13 @@ export function middleware(req: NextRequest) {
 
   if (isAuthPage) {
     if (token) {
-      return NextResponse.redirect(new URL("/map", req.url));
+      return NextResponse.redirect(new URL("/opportunities", req.url));
     }
     return NextResponse.next();
   }
 
   if (!token) {
-    const callbackUrl = encodeURIComponent(pathname);
+    const callbackUrl = encodeURIComponent(`${pathname}${req.nextUrl.search}`);
     return NextResponse.redirect(
       new URL(`/login?callbackUrl=${callbackUrl}`, req.url),
     );

@@ -23,7 +23,7 @@ export async function GET(req: NextRequest, context: RouteContext<"/api/auth/ver
 
     // Redirect to login with success message
     return NextResponse.redirect(
-      new URL("/login?verified=true", req.nextUrl)
+      new URL(`/login?verified=true&email=${encodeURIComponent(email)}`, req.nextUrl)
     );
   } catch (error) {
     logger.error({ err: error }, "Email verification error");

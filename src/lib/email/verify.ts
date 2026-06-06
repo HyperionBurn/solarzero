@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { cleanEnvValue } from "../env";
+import { normalizeEmailAddress } from "./address";
 
 /**
  * Generate a verification token for email verification.
@@ -9,9 +10,16 @@ import { cleanEnvValue } from "../env";
 export async function generateVerificationToken(
   email: string
 ): Promise<string> {
+  const normalizedEmail = normalizeEmailAddress(email);
+
   // Delete any existing tokens for this email
   await db.verificationToken.deleteMany({
-    where: { identifier: email },
+    where: {
+      identifier: {
+        equals: normalizedEmail,
+        mode: "insensitive",
+      },
+    },
   });
 
   // Generate a random token
@@ -21,7 +29,7 @@ export async function generateVerificationToken(
   // Store the token
   await db.verificationToken.create({
     data: {
-      identifier: email,
+      identifier: normalizedEmail,
       token,
       expires,
     },
@@ -54,8 +62,21 @@ export async function verifyEmailToken(
   }
 
   // Mark the user's email as verified
+  const user = await db.user.findFirst({
+    where: {
+      email: {
+        equals: verificationToken.identifier,
+        mode: "insensitive",
+      },
+    },
+  });
+
+  if (!user) {
+    return null;
+  }
+
   await db.user.update({
-    where: { email: verificationToken.identifier },
+    where: { id: user.id },
     data: { emailVerified: new Date() },
   });
 
