@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "createdAt": "2026-06-06T15:58:54.477Z",
+  "updatedAt": "2026-06-06T16:03:25.153Z",
+  "briefPath": ".omx/ultragoal/brief.md",
+  "goalsPath": ".omx/ultragoal/goals.json",
+  "ledgerPath": ".omx/ultragoal/ledger.jsonl",
+  "codexGoalMode": "aggregate",
+  "goals": [
+    {
+      "id": "G001-durable-plan-representing-100-refine",
+      "title": "Durable plan representing 100 refinements grouped into executable goals.",
+      "objective": "Durable plan representing 100 refinements grouped into executable goals.",
+      "status": "complete",
+      "attempt": 1,
+      "createdAt": "2026-06-06T15:58:54.477Z",
+      "updatedAt": "2026-06-06T16:03:25.153Z",
+      "startedAt": "2026-06-06T15:59:16.510Z",
+      "completedAt": "2026-06-06T16:03:25.153Z",
+      "evidence": "Created .omx/plans/solarzero-100-refinements-backlog.md with exactly 100 numbered refinements; steered .omx/ultragoal/goals.json into ordered Batch A-J implementation stories plus final cleanup/review gate."
+    },
+    {
+      "id": "G002-implement-refinements-story-by-story",
+      "title": "Batch A: Production trust, auth, and core flow",
+      "objective": "Implement refinements 1-10 from .omx/plans/solarzero-100-refinements-backlog.md: production trust, auth, core flow feedback, and verified sign-in confidence. Commit and push coherent fixes with targeted tests.",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-06T15:58:54.477Z",
+      "updatedAt": "2026-06-06T16:02:11.258Z",
+      "steeringEvidence": "Created .omx/plans/solarzero-100-refinements-backlog.md with exactly 100 numbered refinements grouped into ten batches.",
+      "steeringRationale": "The generated G002 story was too broad to execute safely; narrowing it to Batch A makes the durable run incremental and verifiable."
+    },
+    {
+      "id": "G003-add-update-tests-for-critical-behavi",
+      "title": "Batch B: Opportunity dashboard UX",
+      "objective": "Implement refinements 11-20 from .omx/plans/solarzero-100-refinements-backlog.md: dashboard naming, source quality, ranking explanations, sorting, filters, URL state, density, status shortcuts, stale indicators, and empty states.",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-06T15:58:54.477Z",
+      "updatedAt": "2026-06-06T16:02:47.077Z",
+      "steeringEvidence": "Created .omx/plans/solarzero-100-refinements-backlog.md with exactly 100 numbered refinements grouped into ten batches.",
+      "steeringRationale": "Replace generic generated stories with concrete, ordered refinement batches so each story is safely executable and verifiable."
+    },
+    {
+      "id": "G004-maintain-clear-evidence-in-omx-ledge",
+      "title": "Batch C: Dossier explainability and actionability",
+      "objective": "Implement refinements 21-30 from .omx/plans/solarzero-100-refinements-backlog.md: executive summary, score explanations, drivers/blockers, claim source metadata, missing data, next action rationale, timeline, sales handoff, and export-friendly dossier layout.",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-06T15:58:54.477Z",
+      "updatedAt": "2026-06-06T16:02:47.565Z",
+      "steeringEvidence": "Created .omx/plans/solarzero-100-refinements-backlog.md with exactly 100 numbered refinements grouped into ten batches.",
+      "steeringRationale": "Replace generic generated stories with concrete, ordered refinement batches so each story is safely executable and verifiable."
+    },
+    {
+      "id": "G005-final-cleanup-and-independent-review",
+      "title": "Batch D: Map, discovery, and scan UX",
+      "objective": "Implement refinements 31-40 from .omx/plans/solarzero-100-refinements-backlog.md: scan sizing, progress, safe limits, provider failure guidance, map legend/clustering, location naming, visible-area scans, ranked-results CTA, and preserved scan state.",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-06T15:58:54.477Z",
+      "updatedAt": "2026-06-06T16:02:48.064Z",
+      "steeringEvidence": "Created .omx/plans/solarzero-100-refinements-backlog.md with exactly 100 numbered refinements grouped into ten batches.",
+      "steeringRationale": "Replace generic generated stories with concrete, ordered refinement batches so each story is safely executable and verifiable."
+    },
+    {
+      "id": "G006-batch-e-assessment-results-and-solar",
+      "title": "Batch E: Assessment results and solar accuracy",
+      "objective": "Implement refinements 41-50 from .omx/plans/solarzero-100-refinements-backlog.md: realistic sizing guards, assumptions visibility, soiling decision, sensitivity/warnings/ranges, and assessment edge-case tests.",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-06T16:02:48.590Z",
+      "updatedAt": "2026-06-06T16:02:48.590Z",
+      "evidence": "Created .omx/plans/solarzero-100-refinements-backlog.md with exactly 100 numbered refinements grouped into ten batches."
+    },
+    {
+      "id": "G007-batch-f-data-honesty-sources-and-sig",
+      "title": "Batch F: Data honesty, sources, and SignalGraph",
+      "objective": "Implement refinements 51-60 from .omx/plans/solarzero-100-refinements-backlog.md: connector access models, source labels, simulated-source cleanup, source quality, stale warnings, failure summaries, legend reuse, and classification tests.",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-06T16:02:49.012Z",
+      "updatedAt": "2026-06-06T16:02:49.012Z",
+      "evidence": "Created .omx/plans/solarzero-100-refinements-backlog.md with exactly 100 numbered refinements grouped into ten batches."
+    },
+    {
+      "id": "G008-batch-g-database-query-and-performan",
+      "title": "Batch G: Database, query, and performance",
+      "objective": "Implement refinements 61-70 from .omx/plans/solarzero-100-refinements-backlog.md: indexes, lighter list queries, grouped counts, pagination, export limits, dedupe/backfill strategy, timing logs, and pagination/export tests.",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-06T16:02:49.548Z",
+      "updatedAt": "2026-06-06T16:02:49.548Z",
+      "evidence": "Created .omx/plans/solarzero-100-refinements-backlog.md with exactly 100 numbered refinements grouped into ten batches."
+    },
+    {
+      "id": "G009-batch-h-architecture-and-serverless",
+      "title": "Batch H: Architecture and serverless safety",
+      "objective": "Implement refinements 71-80 from .omx/plans/solarzero-100-refinements-backlog.md: bounded serverless execution, Redis degradation, Upstash-safe paths, BullMQ import safety, provider timeouts/retries, idempotency, server-only boundaries, and safety tests.",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-06T16:02:50.055Z",
+      "updatedAt": "2026-06-06T16:02:50.055Z",
+      "evidence": "Created .omx/plans/solarzero-100-refinements-backlog.md with exactly 100 numbered refinements grouped into ten batches."
+    },
+    {
+      "id": "G010-batch-i-testing-observability-and-re",
+      "title": "Batch I: Testing, observability, and release confidence",
+      "objective": "Implement refinements 81-90 from .omx/plans/solarzero-100-refinements-backlog.md: critical integration coverage, structured logging, production smoke checklist/script, and CI parity notes.",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-06T16:02:50.643Z",
+      "updatedAt": "2026-06-06T16:02:50.643Z",
+      "evidence": "Created .omx/plans/solarzero-100-refinements-backlog.md with exactly 100 numbered refinements grouped into ten batches."
+    },
+    {
+      "id": "G011-batch-j-ui-polish-accessibility-and",
+      "title": "Batch J: UI polish, accessibility, and operator efficiency",
+      "objective": "Implement refinements 91-100 from .omx/plans/solarzero-100-refinements-backlog.md: keyboard navigation, aria-live updates, mobile layouts, skeletons, visual hierarchy, consistent badges, UAE microcopy, coordinate actions, recent activity, and release notes.",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-06T16:02:51.254Z",
+      "updatedAt": "2026-06-06T16:02:51.254Z",
+      "evidence": "Created .omx/plans/solarzero-100-refinements-backlog.md with exactly 100 numbered refinements grouped into ten batches."
+    },
+    {
+      "id": "G012-final-gate-cleanup-verification-revi",
+      "title": "Final gate: cleanup, verification, review, production proof",
+      "objective": "Run targeted and full verification after all batches, run the mandatory ai-slop-cleaner and independent code-review gate, deploy/verify production with Vercel CLI when appropriate, checkpoint final evidence, then mark the aggregate Codex goal complete only if clean.",
+      "status": "pending",
+      "attempt": 0,
+      "createdAt": "2026-06-06T16:02:51.784Z",
+      "updatedAt": "2026-06-06T16:02:51.784Z",
+      "evidence": "Created .omx/plans/solarzero-100-refinements-backlog.md with exactly 100 numbered refinements grouped into ten batches."
+    }
+  ],
+  "codexObjective": "Complete the durable ultragoal plan in .omx/ultragoal/goals.json, including later accepted/appended stories, under the original brief constraints; use .omx/ultragoal/ledger.jsonl as the audit trail."
+}
