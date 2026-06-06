@@ -3,9 +3,9 @@
   "workflow": "performance-goal",
   "slug": "uiux-20",
   "objective": "Deliver 20 UI/UX improvements across SolarZero without regressing existing flows",
-  "status": "in_progress",
+  "status": "complete",
   "createdAt": "2026-06-06T14:09:37.960Z",
-  "updatedAt": "2026-06-06T14:09:58.780Z",
+  "updatedAt": "2026-06-06T14:37:27.504Z",
   "evaluator": {
     "command": "npm run lint && npm run type-check && npm run test:run && npm run build",
     "contract": "PASS when all four commands succeed, the 20-item UI/UX improvement checklist is fully completed, and no production-smoke blockers remain"
@@ -15,5 +15,11 @@
     "ledger": ".omx/goals/performance/uiux-20/ledger.jsonl",
     "evaluator": ".omx/goals/performance/uiux-20/evaluator.md"
   },
-  "startedAt": "2026-06-06T14:09:58.780Z"
+  "startedAt": "2026-06-06T14:09:58.780Z",
+  "lastValidation": {
+    "status": "pass",
+    "evidence": "npm run lint, npm run type-check, npm run test:run, npm run build all passed; Vercel production deploy completed and aliased to https://solarzero.vercel.app; live smoke confirmed /login returns 200 OK",
+    "recordedAt": "2026-06-06T14:36:30.755Z"
+  },
+  "completedAt": "2026-06-06T14:37:27.504Z"
 }
