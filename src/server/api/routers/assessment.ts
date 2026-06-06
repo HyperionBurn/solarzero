@@ -137,6 +137,7 @@ export const assessmentRouter = router({
         include: {
           building: {
             select: {
+              name: true,
               address: true,
               lat: true,
               lng: true,

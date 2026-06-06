@@ -53,6 +53,12 @@ export const buildingRouter = router({
         where: { osmId: parsed.osmId },
       });
       if (existingBuilding) {
+        if (parsed.name && !existingBuilding.name) {
+          return db.building.update({
+            where: { id: existingBuilding.id },
+            data: { name: parsed.name },
+          });
+        }
         return existingBuilding;
       }
 
@@ -64,6 +70,7 @@ export const buildingRouter = router({
         data: {
           osmId: parsed.osmId,
           osmType: parsed.osmType,
+          name: parsed.name,
           address,
           lat,
           lng,
@@ -102,7 +109,7 @@ export const buildingRouter = router({
     }),
 
   /**
-   * Search buildings by address.
+   * Search buildings by name or address.
    */
   search: publicProcedure
     .input(
@@ -113,7 +120,10 @@ export const buildingRouter = router({
     .query(async ({ input }) => {
       const buildings = await db.building.findMany({
         where: {
-          address: { contains: input.query, mode: "insensitive" },
+          OR: [
+            { name: { contains: input.query, mode: "insensitive" } },
+            { address: { contains: input.query, mode: "insensitive" } },
+          ],
         },
         take: 10,
         orderBy: { createdAt: "desc" },
@@ -184,6 +194,7 @@ export const buildingRouter = router({
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
+          name: true,
           address: true,
           lat: true,
           lng: true,

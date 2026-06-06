@@ -1,0 +1,1 @@
+ALTER TABLE "Building" ADD COLUMN "name" TEXT;

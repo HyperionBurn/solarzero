@@ -7,6 +7,7 @@ import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Download, FileText, Loader2, ArrowLeft, RefreshCw, Zap, Sun, Clock, DollarSign, CheckCircle2, XCircle } from "lucide-react";
+import { getBuildingDisplayName, getBuildingDisplaySubtitle } from "@/lib/building-display";
 
 export default function ProposalPage() {
   const params = useParams<{ id: string }>();
@@ -96,7 +97,9 @@ export default function ProposalPage() {
           ? "Ready"
           : proposal.status === "failed"
             ? "Failed"
-            : proposal.status;
+    : proposal.status;
+  const buildingName = getBuildingDisplayName(proposal.building);
+  const buildingSubtitle = getBuildingDisplaySubtitle(proposal.building);
 
   return (
     <motion.div
@@ -121,7 +124,7 @@ export default function ProposalPage() {
             <div>
               <h2 className="text-base font-semibold">Proposal</h2>
               <p className="text-xs text-muted-foreground">
-                {proposal.building?.address ?? "Building"} &middot; Assessment Report
+                {buildingName}{buildingSubtitle ? ` · ${buildingSubtitle}` : ""} &middot; Assessment Report
               </p>
             </div>
           </div>

@@ -399,6 +399,7 @@ export class AutonomousDiscoveryService {
             data: {
               osmId: b.osmId,
               osmType: b.osmType,
+              name: b.name,
               address,
               lat: b.lat,
               lng: b.lng,
@@ -410,6 +411,11 @@ export class AutonomousDiscoveryService {
 
           // Create and score opportunity
           await OpportunityService.ensureOpportunityForBuilding(building.id);
+        } else if (b.name && !building.name) {
+          building = await db.building.update({
+            where: { id: building.id },
+            data: { name: b.name },
+          });
         }
 
         // Upsert Discovery Candidate

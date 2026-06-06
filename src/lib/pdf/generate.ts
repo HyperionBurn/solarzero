@@ -14,6 +14,7 @@ const printer = new PdfPrinter(fonts);
 
 export interface ProposalData {
   proposalId: string;
+  buildingName?: string | null;
   buildingAddress: string;
   buildingType: string;
   roofAreaM2: number;
@@ -60,10 +61,23 @@ export async function generateProposalPdf(data: ProposalData): Promise<Buffer> {
       { text: "\n" },
 
       // Building address
-      {
-        text: data.buildingAddress,
-        style: "address",
-      },
+      ...(data.buildingName?.trim()
+        ? [
+            {
+              text: data.buildingName.trim(),
+              style: "address",
+            },
+            {
+              text: data.buildingAddress,
+              style: "addressSubtitle",
+            },
+          ]
+        : [
+            {
+              text: data.buildingAddress,
+              style: "address",
+            },
+          ]),
       { text: "\n" },
 
       // Building Overview
@@ -192,6 +206,11 @@ export async function generateProposalPdf(data: ProposalData): Promise<Buffer> {
         fontSize: 18,
         bold: true,
         margin: [0, 16, 0, 16] as [number, number, number, number],
+      },
+      addressSubtitle: {
+        fontSize: 12,
+        color: "#64748b",
+        margin: [0, -8, 0, 16] as [number, number, number, number],
       },
       sectionHeader: {
         fontSize: 18,

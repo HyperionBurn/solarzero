@@ -176,7 +176,10 @@ export default function OpportunitiesDashboard() {
   const opportunities: OpportunityListItem[] = listData?.opportunities ?? [];
   const filteredOpportunities = opportunities.filter((o) => {
     if (!filters.search) return true;
-    return o.building.address.toLowerCase().includes(filters.search.toLowerCase());
+    const query = filters.search.toLowerCase();
+    return [o.building.name, o.building.address]
+      .filter((value): value is string => Boolean(value))
+      .some((value) => value.toLowerCase().includes(query));
   });
 
   return (

@@ -16,6 +16,7 @@ import { Loader2, Download, Play, ArrowLeft, Zap, Sun, DollarSign, TrendingUp, C
 import { getEmirateConfig } from "@/lib/regulatory/emirates";
 import { calculateAllFinancingModels, type FinancingModel } from "@/lib/engine/financing";
 import { calculateSensitivity, CONSERVATIVE, EXPECTED, OPTIMISTIC, type SensitivityVariables } from "@/lib/engine/sensitivity";
+import { getBuildingDisplayName, getBuildingDisplaySubtitle } from "@/lib/building-display";
 
 const PRESETS = { CONSERVATIVE, EXPECTED, OPTIMISTIC };
 
@@ -81,6 +82,7 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
     try {
       await runAssessment.mutateAsync({ buildingId: id });
       await refetchAssessment();
+      showToast(`Assessment complete for ${getBuildingDisplayName(building)}. Results refreshed.`, "success");
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Assessment failed. Please try again.", "error");
     } finally {
@@ -186,6 +188,8 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const typeColor = BUILDING_TYPE_COLORS[building.buildingType ?? ""] ?? "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border-slate-300";
+  const buildingName = getBuildingDisplayName(building);
+  const buildingSubtitle = getBuildingDisplaySubtitle(building);
 
   // Pre-compute emirate & utility info (avoid IIFEs in JSX)
   const emirateInfo = (building.lat && building.lng) ? getEmirateConfig(building.lat, building.lng) : null;
@@ -263,7 +267,8 @@ export default function BuildingDetailPage({ params }: { params: Promise<{ id: s
             >
               <ArrowLeft className="h-3 w-3" /> Back to Map
             </button>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">{building.address}</h1>
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">{buildingName}</h1>
+            {buildingSubtitle && <p className="mt-1 text-sm text-muted-foreground">{buildingSubtitle}</p>}
             <div className="mt-3 flex flex-wrap items-center gap-2.5">
               <span className={`inline-flex items-center rounded-full border px-3 py-0.5 text-[11px] font-semibold uppercase tracking-[0.05em] shadow-xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02] ${typeColor}`}>
                 {building.buildingType ?? "Unknown"}

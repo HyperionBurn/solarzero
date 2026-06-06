@@ -61,6 +61,7 @@ export const proposalRouter = router({
         const { generateProposalPdf } = await import("@/lib/pdf/generate");
         const pdfBuffer = await generateProposalPdf({
           proposalId: proposal.id,
+          buildingName: building.name,
           buildingAddress: building.address,
           buildingType: building.buildingType ?? "commercial",
           roofAreaM2: building.roofAreaM2 ?? 0,
@@ -108,7 +109,7 @@ export const proposalRouter = router({
         where: { id: input.id },
         include: {
           building: {
-            select: { address: true, buildingType: true },
+            select: { name: true, address: true, buildingType: true },
           },
           assessment: {
             select: {

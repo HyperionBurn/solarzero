@@ -1,6 +1,7 @@
 import type { OSMElement, OSMResponse } from "./client";
 
 export interface ParsedBuilding {
+  name: string | null;
   roofAreaM2: number;
   buildingType: string;
   osmId: string;
@@ -9,6 +10,7 @@ export interface ParsedBuilding {
 }
 
 export interface ParsedBuildingData {
+  name: string | null;
   roofAreaM2: number;
   buildingType: string;
   osmId: string;
@@ -131,6 +133,39 @@ function extractBuildingType(tags?: Record<string, string>): string {
   return normalized;
 }
 
+function extractBuildingName(tags?: Record<string, string>): string | null {
+  if (!tags) return null;
+
+  const rawName =
+    tags["name"] ||
+    tags["official_name"] ||
+    tags["short_name"] ||
+    tags["name:en"] ||
+    null;
+
+  if (!rawName) return null;
+
+  const name = rawName.trim().replace(/\s+/g, " ");
+  if (!name) return null;
+
+  const normalized = name.toLowerCase();
+  const genericNames = new Set([
+    "building",
+    "commercial building",
+    "office building",
+    "residential building",
+    "warehouse building",
+    "retail building",
+    "industrial building",
+  ]);
+
+  if (genericNames.has(normalized)) {
+    return null;
+  }
+
+  return name;
+}
+
 /**
  * Parse OSM response to extract building footprint information.
  */
@@ -191,10 +226,12 @@ export function parseOSMBuilding(osmData: OSMResponse): ParsedBuilding | null {
   if (!bestBuilding) return null;
 
   const buildingType = extractBuildingType(bestBuilding.tags);
+  const name = extractBuildingName(bestBuilding.tags);
   const heightStr = bestBuilding.tags?.["height"] || bestBuilding.tags?.["building:height"];
   const heightMeters = heightStr ? parseFloat(heightStr) : null;
 
   return {
+    name,
     roofAreaM2: bestArea,
     buildingType,
     osmId: `${bestBuilding.type}/${bestBuilding.id}`,
@@ -259,10 +296,12 @@ export function parseOSMBuildings(osmData: OSMResponse): ParsedBuildingData[] {
     const centroidLng = coords.reduce((s, c) => s + c.lon, 0) / coords.length;
 
     const buildingType = extractBuildingType(el.tags);
+    const name = extractBuildingName(el.tags);
     const heightStr = el.tags?.["height"] || el.tags?.["building:height"];
     const heightMeters = heightStr ? parseFloat(heightStr) : null;
 
     results.push({
+      name,
       roofAreaM2: area,
       buildingType,
       osmId: `${el.type}/${el.id}`,

@@ -8,6 +8,7 @@ import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Zap, ChevronRight, MapPin, Clock, History, RefreshCw } from "lucide-react";
+import { getBuildingDisplayName, getBuildingDisplaySubtitle } from "@/lib/building-display";
 
 export default function AssessmentsPage() {
   const [limit] = useState(50);
@@ -49,7 +50,7 @@ export default function AssessmentsPage() {
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-border/40">
-                    <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Building Address</th>
+                    <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Building</th>
                     <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Date</th>
                     <th className="px-4 py-3.5 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">System Size</th>
                     <th className="px-4 py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground" />
@@ -106,7 +107,7 @@ export default function AssessmentsPage() {
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-border/40">
-                    <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Building Address</th>
+                    <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Building</th>
                     <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Date</th>
                     <th className="px-4 py-3.5 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">System Size</th>
                     <th className="px-4 py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground" />
@@ -126,7 +127,16 @@ export default function AssessmentsPage() {
                           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/5">
                             <MapPin className="h-3.5 w-3.5 text-primary" />
                           </div>
-                          <span className="text-sm font-medium">{a.building?.address ?? a.buildingId.slice(0, 8)}</span>
+                          <div className="flex min-w-0 flex-col">
+                            <span className="truncate text-sm font-medium">
+                              {getBuildingDisplayName(a.building)}
+                            </span>
+                            {getBuildingDisplaySubtitle(a.building) && (
+                              <span className="truncate text-[11px] text-muted-foreground">
+                                {getBuildingDisplaySubtitle(a.building)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3.5">

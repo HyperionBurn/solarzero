@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight, Download, Zap, Info, Loader2, CheckSquare, Square, Upload, AlertCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
+import { getBuildingDisplayName, getBuildingDisplaySubtitle } from "@/lib/building-display";
 
 interface AssessmentData {
   id: string;
@@ -19,6 +20,7 @@ interface AssessmentData {
 
 interface BuildingData {
   id: string;
+  name: string | null;
   address: string;
   lat: number;
   lng: number;
@@ -58,9 +60,20 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkAssessing, setIsBulkAssessing] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const runAssessment = api.assessment.run.useMutation();
   const rescoreOpportunity = api.opportunity.rescore.useMutation();
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ message, type });
+  };
 
   const handleSelectAll = () => {
     const visibleSelectedIds = selectedIds.filter((id) => opportunities.some((o) => o.id === id));
@@ -91,13 +104,18 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
     setIsBulkAssessing(true);
     setBulkProgress({ current: 0, total: unassessedOpps.length });
 
+    let successCount = 0;
+    let failedCount = 0;
+
     for (let i = 0; i < unassessedOpps.length; i++) {
       const opp = unassessedOpps[i];
       try {
         await runAssessment.mutateAsync({ buildingId: opp.buildingId });
         await rescoreOpportunity.mutateAsync({ id: opp.id });
+        successCount++;
       } catch (err) {
         console.error(`Bulk assessment failed for building ${opp.buildingId}:`, err);
+        failedCount++;
       }
       setBulkProgress((p) => ({ ...p, current: i + 1 }));
     }
@@ -106,6 +124,17 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
     setSelectedIds([]);
     refetch();
     refetchStats();
+
+    if (successCount > 0) {
+      showToast(
+        failedCount > 0
+          ? `Assessment complete for ${successCount} building${successCount === 1 ? "" : "s"}; ${failedCount} failed.`
+          : `Assessment complete for ${successCount} building${successCount === 1 ? "" : "s"}.`,
+        failedCount > 0 ? "error" : "success",
+      );
+    } else if (failedCount > 0) {
+      showToast("Assessment failed for all selected buildings.", "error");
+    }
   };
 
   // CSV Import State & Mutation
@@ -244,6 +273,28 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
 
   return (
     <div className="space-y-4">
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            role="alert"
+            initial={{ opacity: 0, x: 24, scale: 0.98 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 24, scale: 0.98 }}
+            className={`fixed right-4 top-4 z-50 rounded-xl border shadow-lg backdrop-blur-xl ${
+              toast.type === "success" ? "border-emerald-200 dark:border-emerald-800" : "border-red-200 dark:border-red-800"
+            }`}
+          >
+            <div className={`flex items-center gap-2.5 px-4 py-3 text-sm font-medium ${
+              toast.type === "success" ? "bg-emerald-50/90 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-200" : "bg-red-50/90 text-red-800 dark:bg-red-950/80 dark:text-red-200"
+            }`}>
+              <span className="flex-1">{toast.message}</span>
+              <button onClick={() => setToast(null)} type="button" className="text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Bulk Actions and Export Toolbar */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
@@ -390,7 +441,7 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
                   </th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Score</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Rank</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Address</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Building</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Type</th>
                   <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Roof Area</th>
                   <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Sizing / Savings</th>
@@ -441,6 +492,8 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
                     const isAssessed = !!o.building.assessment;
                     const sysSize = o.building.assessment?.systemSizeKwp;
                     const savings = o.building.assessment?.annualSavingsAed;
+                    const displayName = getBuildingDisplayName(o.building);
+                    const displaySubtitle = getBuildingDisplaySubtitle(o.building);
 
                     return (
                       <motion.tr
@@ -454,7 +507,7 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
                       >
                         {/* Checkbox */}
                         <td className="px-4 py-3">
-                          <button type="button" onClick={() => handleSelectRow(o.id)} aria-label={`Select opportunity for ${o.building.address}`} className="text-muted-foreground hover:text-foreground">
+                          <button type="button" onClick={() => handleSelectRow(o.id)} aria-label={`Select opportunity for ${displayName}`} className="text-muted-foreground hover:text-foreground">
                             {isSelected ? (
                               <CheckSquare className="h-4 w-4 text-teal-600" />
                             ) : (
@@ -483,8 +536,11 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
                         </td>
 
                         {/* Address */}
-                        <td className="px-4 py-3 max-w-[240px] truncate">
-                          <span className="font-medium text-xs text-foreground/90">{o.building.address}</span>
+                        <td className="px-4 py-3 max-w-[240px]">
+                          <div className="flex flex-col">
+                            <span className="truncate font-medium text-xs text-foreground/90">{displayName}</span>
+                            {displaySubtitle && <span className="truncate text-[10px] text-muted-foreground">{displaySubtitle}</span>}
+                          </div>
                         </td>
 
                         {/* Type */}

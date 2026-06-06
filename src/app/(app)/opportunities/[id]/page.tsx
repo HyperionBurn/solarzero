@@ -35,6 +35,7 @@ import {
 import { getEmirateConfig } from "@/lib/regulatory/emirates";
 import { calculateAllFinancingModels, type FinancingModel } from "@/lib/engine/financing";
 import { calculateSensitivity, CONSERVATIVE, EXPECTED, OPTIMISTIC, type SensitivityVariables } from "@/lib/engine/sensitivity";
+import { getBuildingDisplayName, getBuildingDisplaySubtitle } from "@/lib/building-display";
 
 const PRESETS = { CONSERVATIVE, EXPECTED, OPTIMISTIC };
 
@@ -169,7 +170,7 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
       await runAssessment.mutateAsync({ buildingId: opportunity.buildingId });
       await rescoreOpportunity.mutateAsync({ id: opportunity.id });
       await refetch();
-      showToast("Technical/financial assessment completed successfully.", "success");
+      showToast(`Assessment complete for ${getBuildingDisplayName(opportunity.building)}. Results refreshed.`, "success");
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Assessment failed.", "error");
     } finally {
@@ -394,6 +395,8 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
 
   const { building } = opportunity;
   const { assessment } = building;
+  const buildingDisplayName = getBuildingDisplayName(building);
+  const buildingDisplaySubtitle = getBuildingDisplaySubtitle(building);
   const evidenceTimeline = (opportunity as { evidence?: OpportunityEvidenceItem[] }).evidence ?? [];
   const noteTimeline = (opportunity as { notes?: OpportunityNoteItem[] }).notes ?? [];
 
@@ -485,7 +488,12 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
               <ArrowLeft className="h-3 w-3" /> Back to pipeline
             </button>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="min-w-0 text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">{building.address}</h1>
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">{buildingDisplayName}</h1>
+                {buildingDisplaySubtitle && (
+                  <p className="mt-1 text-sm text-muted-foreground">{buildingDisplaySubtitle}</p>
+                )}
+              </div>
               <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${getBandBadgeClass(opportunity.scoreBand)}`}>
                 BAND {opportunity.scoreBand}
               </span>

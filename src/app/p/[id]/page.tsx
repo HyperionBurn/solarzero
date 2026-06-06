@@ -5,6 +5,7 @@ import { getEmirateConfig } from "@/lib/regulatory/emirates";
 import { calculateAllFinancingModels } from "@/lib/engine/financing";
 import { Solar3DViewer } from "@/components/viewer/Solar3DViewer";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { getBuildingDisplayName, getBuildingDisplaySubtitle } from "@/lib/building-display";
 
 export const dynamic = "force-dynamic";
 
@@ -12,10 +13,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const proposal = await db.proposal.findUnique({ where: { id }, include: { building: true, assessment: true } });
   if (!proposal?.building) return { title: "Solar Proposal - SolarZero" };
+  const buildingName = getBuildingDisplayName(proposal.building);
+  const buildingSubtitle = getBuildingDisplaySubtitle(proposal.building);
   return {
-    title: `Solar Proposal - ${proposal.building.address}`,
-    description: `Solar assessment for ${proposal.building.address} — ${proposal.assessment ? `${proposal.assessment.systemSizeKwp.toFixed(1)} kWp` : "View details"}`,
-    openGraph: { title: `Solar Proposal - ${proposal.building.address}`, description: `${proposal.assessment?.systemSizeKwp.toFixed(1)} kWp solar system` },
+    title: `Solar Proposal - ${buildingName}`,
+    description: `Solar assessment for ${buildingName}${buildingSubtitle ? ` (${buildingSubtitle})` : ""} — ${proposal.assessment ? `${proposal.assessment.systemSizeKwp.toFixed(1)} kWp` : "View details"}`,
+    openGraph: { title: `Solar Proposal - ${buildingName}`, description: `${proposal.assessment?.systemSizeKwp.toFixed(1)} kWp solar system` },
   };
 }
 
@@ -31,6 +34,8 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
 
   const { building, assessment } = proposal;
   const emirate = getEmirateConfig(building.lat, building.lng);
+  const buildingName = getBuildingDisplayName(building);
+  const buildingSubtitle = getBuildingDisplaySubtitle(building);
 
   const financingModels = calculateAllFinancingModels({
     totalCostAed: assessment.totalCostAed,
@@ -55,14 +60,15 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
               <p className="text-xs text-muted-foreground">Powered by Positive Zero</p>
             </div>
           </div>
-          <a href={`mailto:sales@positivezero.ae?subject=Solar Proposal: ${building.address}`} className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700">Schedule a Call</a>
+          <a href={`mailto:sales@positivezero.ae?subject=Solar Proposal: ${buildingName}`} className="rounded-md bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700">Schedule a Call</a>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
         <div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="text-lg font-bold sm:text-2xl">{building.address}</h1>
+            <h1 className="text-lg font-bold sm:text-2xl">{buildingName}</h1>
+            {buildingSubtitle && <span className="text-sm text-muted-foreground">{buildingSubtitle}</span>}
             <span className="rounded-full bg-blue-50 px-3 py-0.5 text-xs font-medium text-blue-700 border border-blue-300">{emirate.name} · {emirate.utility}</span>
           </div>
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
@@ -129,7 +135,7 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
 
             <Card>
               <CardContent className="pt-6">
-                <a href={`mailto:sales@positivezero.ae?subject=Solar Proposal: ${building.address}`} className="block w-full rounded-md bg-teal-600 py-3 text-center text-sm font-medium text-white hover:bg-teal-700">Schedule a Call</a>
+                <a href={`mailto:sales@positivezero.ae?subject=Solar Proposal: ${buildingName}`} className="block w-full rounded-md bg-teal-600 py-3 text-center text-sm font-medium text-white hover:bg-teal-700">Schedule a Call</a>
                 <p className="mt-3 text-center text-xs text-muted-foreground">Ready to go solar? Our team will walk you through the proposal.</p>
               </CardContent>
             </Card>

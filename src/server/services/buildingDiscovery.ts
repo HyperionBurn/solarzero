@@ -53,6 +53,14 @@ export class BuildingDiscoveryService {
     for (const b of parsed) {
       const existing = existingByOsmId.get(b.osmId);
       if (existing) {
+        if (b.name && !existing.name) {
+          const updated = await db.building.update({
+            where: { id: existing.id },
+            data: { name: b.name },
+          });
+          results.push(updated);
+          continue;
+        }
         results.push(existing);
       } else {
         toCreate.push(b);
@@ -69,6 +77,7 @@ export class BuildingDiscoveryService {
         data: {
           osmId: b.osmId,
           osmType: b.osmType,
+          name: b.name,
           address,
           lat: b.lat,
           lng: b.lng,

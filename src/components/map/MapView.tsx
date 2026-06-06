@@ -6,6 +6,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { api } from "@/trpc/react";
 import { escapeHtml } from "@/lib/utils";
+import { getBuildingDisplayName, getBuildingDisplaySubtitle } from "@/lib/building-display";
 
 interface MapViewProps {
   center?: [number, number];
@@ -16,6 +17,7 @@ interface MapViewProps {
 
 interface MapBuilding {
   id: string;
+  name: string | null;
   address: string;
   lat: number;
   lng: number;
@@ -224,6 +226,8 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
 
       const ctaUrl = opp ? `/opportunities/${opp.id}` : `/buildings/${building.id}`;
       const ctaText = opp ? "Open Dossier" : "View Building";
+      const buildingDisplayName = getBuildingDisplayName(building);
+      const buildingDisplaySubtitle = getBuildingDisplaySubtitle(building);
 
       const html = `
         <div style="font-family:system-ui,-apple-system,sans-serif;padding:12px;background:${popupBg};border-radius:12px;width:260px;box-shadow:0 4px 20px rgba(0,0,0,0.15)">
@@ -231,7 +235,8 @@ export default function MapView({ center = [55.2708, 25.2048], zoom = 12, pitch 
             ${opp ? `<span style="font-weight:700;font-size:10px;padding:2.5px 6px;border-radius:4px;background:${color}15;color:${color};border:1px solid ${color}30">BAND ${band}</span>` : `<span style="font-weight:700;font-size:10px;padding:2.5px 6px;border-radius:4px;background:#94a3b815;color:#94a3b8;border:1px solid #94a3b830">UNRANKED</span>`}
             ${opp ? `<span style="font-weight:700;font-size:13px;color:${textColor}">${score} pts</span>` : ""}
           </div>
-          <p style="font-weight:700;font-size:13px;margin:0 0 6px;color:${textColor};line-height:1.4">${escapeHtml(building.address ?? "Building")}</p>
+          <p style="font-weight:700;font-size:13px;margin:0 0 4px;color:${textColor};line-height:1.4">${escapeHtml(buildingDisplayName)}</p>
+          ${buildingDisplaySubtitle ? `<p style="font-size:11px;margin:0 0 6px;color:${mutedColor};line-height:1.4">${escapeHtml(buildingDisplaySubtitle)}</p>` : ""}
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
             <span style="font-size:11px;color:${mutedColor}">Type: ${escapeHtml(building.buildingType ?? "C&I")}</span>
             ${building.roofAreaM2 ? `<span style="font-size:11px;color:${mutedColor}">&middot;</span><span style="font-size:11px;color:${mutedColor}">${Math.round(building.roofAreaM2)} m²</span>` : ""}
