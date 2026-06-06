@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ChevronRight, Download, Zap, Info, Loader2, CheckSquare, Square } from "lucide-react";
+import { ChevronRight, Download, Zap, Info, Loader2, CheckSquare, Square, Upload, AlertCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 
@@ -27,6 +27,13 @@ interface BuildingData {
   assessment: AssessmentData | null;
 }
 
+interface RankSnapshotData {
+  rankGlobal: number | null;
+  rankCampaign: number | null;
+  driversJson: unknown;
+  blockersJson: unknown;
+}
+
 interface OpportunityItem {
   id: string;
   buildingId: string;
@@ -36,6 +43,7 @@ interface OpportunityItem {
   nextAction: string;
   confidence: number;
   building: BuildingData;
+  rankSnapshots?: RankSnapshotData[];
 }
 
 interface OpportunityTableProps {
@@ -96,6 +104,38 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
     setSelectedIds([]);
     refetch();
     refetchStats();
+  };
+
+  // CSV Import State & Mutation
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ success: boolean; count: number; error?: string } | null>(null);
+  const importContactsCsv = api.opportunity.importContactsCsv.useMutation();
+
+  const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportResult(null);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const csvText = event.target?.result as string;
+      try {
+        const res = await importContactsCsv.mutateAsync({ csvText });
+        setImportResult({ success: true, count: res.importedCount });
+        refetch();
+        refetchStats();
+      } catch (err) {
+        console.error("CSV Import failed:", err);
+        const errMsg = err instanceof Error ? err.message : "Invalid CSV file or format";
+        setImportResult({ success: false, count: 0, error: errMsg });
+      } finally {
+        setIsImporting(false);
+        e.target.value = "";
+      }
+    };
+    reader.readAsText(file);
   };
 
   const exportToCsv = () => {
@@ -219,17 +259,81 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
           )}
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={exportToCsv}
-          disabled={opportunities.length === 0}
-          className="h-8 gap-1.5 text-xs font-semibold ml-auto sm:ml-0"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Export CSV
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 ml-auto sm:ml-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => document.getElementById("csv-contact-import-input")?.click()}
+            disabled={isImporting}
+            className="h-8 gap-1.5 text-xs font-semibold cursor-pointer"
+          >
+            {isImporting ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Importing...
+              </>
+            ) : (
+              <>
+                <Upload className="h-3.5 w-3.5" />
+                Import Contacts
+              </>
+            )}
+          </Button>
+          <input
+            type="file"
+            id="csv-contact-import-input"
+            accept=".csv"
+            onChange={handleCsvImport}
+            className="hidden"
+          />
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportToCsv}
+            disabled={opportunities.length === 0}
+            className="h-8 gap-1.5 text-xs font-semibold cursor-pointer"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </Button>
+        </div>
       </div>
+
+      {/* Import Feedback Alert Banner */}
+      {importResult && (
+        <div className={`rounded-xl border p-3.5 text-xs flex items-start gap-2.5 ${
+          importResult.success
+            ? "bg-emerald-500/5 border-emerald-500/25 text-emerald-600 dark:text-emerald-400"
+            : "bg-rose-500/5 border-rose-500/25 text-rose-500"
+        }`}>
+          {importResult.success ? (
+            <div className="flex-1 space-y-1">
+              <span className="font-bold flex items-center gap-1.5">
+                <CheckSquare className="h-4 w-4" /> Contacts Import Succeeded
+              </span>
+              <p className="text-muted-foreground mt-0.5 leading-relaxed">
+                Successfully processed contacts and associated them with <strong>{importResult.count}</strong> matching opportunities. Dynamic rankings have been recalculated.
+              </p>
+            </div>
+          ) : (
+            <div className="flex-1 space-y-1">
+              <span className="font-bold flex items-center gap-1.5">
+                <AlertCircle className="h-4 w-4" /> Contacts Import Failed
+              </span>
+              <p className="text-rose-500/80 leading-relaxed">
+                {importResult.error ?? "Please ensure the CSV is properly formatted with headers: companyName, name, role, email, phone."}
+              </p>
+            </div>
+          )}
+          <button
+            onClick={() => setImportResult(null)}
+            className="text-muted-foreground hover:text-foreground cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Main Table */}
       <div className="group rounded-xl bg-gradient-to-br from-primary/5 to-primary/[0.02] p-[1px] shadow-sm ring-1 ring-black/[0.02] dark:from-primary/10 dark:to-transparent dark:ring-white/[0.04]">
@@ -248,6 +352,7 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
                     </button>
                   </th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Score</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Rank</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Address</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Type</th>
                   <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Roof Area</th>
@@ -314,6 +419,15 @@ export function OpportunityTable({ opportunities, isLoading, refetch, refetchSta
                             </span>
                             <span className="font-semibold text-xs tabular-nums">{o.scoreTotal}</span>
                           </div>
+                        </td>
+
+                        {/* Rank */}
+                        <td className="px-4 py-3">
+                          <span className="font-semibold text-xs tabular-nums text-muted-foreground">
+                            {o.rankSnapshots && o.rankSnapshots[0]
+                              ? `#${o.rankSnapshots[0].rankGlobal}`
+                              : "—"}
+                          </span>
                         </td>
 
                         {/* Address */}

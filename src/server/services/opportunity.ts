@@ -103,6 +103,13 @@ export class OpportunityService {
       },
     });
 
+    try {
+      const { RankingService } = await import("./ranking");
+      await RankingService.generateRankSnapshots();
+    } catch (err) {
+      console.error("Failed to update rank snapshots in ensureOpportunityForBuilding:", err);
+    }
+
     return opportunity;
   }
 
@@ -190,6 +197,13 @@ export class OpportunityService {
         risksJson: JSON.stringify(mergedRisks),
       },
     });
+
+    try {
+      const { RankingService } = await import("./ranking");
+      await RankingService.generateRankSnapshots();
+    } catch (err) {
+      console.error("Failed to update rank snapshots in rescoreOpportunity:", err);
+    }
 
     return updated;
   }

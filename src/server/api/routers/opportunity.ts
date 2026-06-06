@@ -77,6 +77,12 @@ export const opportunityRouter = router({
               assessment: true,
             },
           },
+          rankSnapshots: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+          companySignals: true,
+          contactSignals: true,
         },
         orderBy: [
           { scoreTotal: "desc" },
@@ -117,6 +123,22 @@ export const opportunityRouter = router({
             orderBy: { createdAt: "desc" },
           },
           notes: {
+            orderBy: { createdAt: "desc" },
+          },
+          rankSnapshots: {
+            orderBy: { createdAt: "desc" },
+            take: 10,
+          },
+          companySignals: {
+            include: {
+              contacts: true,
+            },
+          },
+          contactSignals: true,
+          verificationTasks: {
+            orderBy: { createdAt: "desc" },
+          },
+          outreachActivities: {
             orderBy: { createdAt: "desc" },
           },
         },
@@ -410,5 +432,112 @@ export const opportunityRouter = router({
       rejected,
     };
   }),
+
+  /**
+   * Adds manual occupancy/company signals and contacts to an opportunity.
+   */
+  addManualEnrichment: protectedProcedure
+    .input(
+      z.object({
+        opportunityId: z.string(),
+        companyName: z.string(),
+        relationship: z.string().optional(),
+        name: z.string().optional(),
+        role: z.string().optional(),
+        email: z.string().optional(),
+        phone: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { EnrichmentService } = await import("../../services/enrichment");
+      return EnrichmentService.addManualEnrichment({
+        opportunityId: input.opportunityId,
+        companyName: input.companyName,
+        relationship: input.relationship,
+        source: "manual",
+        contact: input.name || input.email || input.phone ? {
+          name: input.name,
+          role: input.role,
+          email: input.email,
+          phone: input.phone,
+          sourcePolicy: "opt_in",
+        } : undefined,
+      });
+    }),
+
+  /**
+   * Logs an outreach activity note against an opportunity.
+   */
+  addOutreachActivity: protectedProcedure
+    .input(
+      z.object({
+        opportunityId: z.string(),
+        type: z.string(),
+        status: z.string(),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const actor = ctx.session?.user?.email ?? "system";
+      return db.outreachActivity.create({
+        data: {
+          opportunityId: input.opportunityId,
+          type: input.type,
+          status: input.status,
+          notes: input.notes ?? null,
+          actor,
+        },
+      });
+    }),
+
+  /**
+   * Requests/schedules an audit task for verifying solarization.
+   */
+  requestVerification: protectedProcedure
+    .input(
+      z.object({
+        opportunityId: z.string(),
+        providerId: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { VerificationService } = await import("../../services/verification");
+      return VerificationService.createVerificationTask(input.opportunityId, input.providerId);
+    }),
+
+  /**
+   * Completes a verification task, recording result and generating evidence.
+   */
+  completeVerification: protectedProcedure
+    .input(
+      z.object({
+        taskId: z.string(),
+        hasSolar: z.boolean(),
+        confidence: z.number().min(0).max(1),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { VerificationService } = await import("../../services/verification");
+      return VerificationService.completeVerificationTask(input.taskId, {
+        hasSolar: input.hasSolar,
+        confidence: input.confidence,
+        notes: input.notes,
+      });
+    }),
+
+  /**
+   * Imports contacts from raw CSV text.
+   */
+  importContactsCsv: protectedProcedure
+    .input(
+      z.object({
+        csvText: z.string(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { EnrichmentService } = await import("../../services/enrichment");
+      return EnrichmentService.importContactsFromCsv(input.csvText);
+    }),
 });
 

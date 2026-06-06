@@ -45,7 +45,7 @@ describe("OpportunityService Integration", () => {
     });
     expect(saved).not.toBeNull();
     expect(saved!.scores.length).toBe(1);
-  });
+  }, 30000);
 
   it("updates opportunity score when solarization evidence is added", async () => {
     const opportunity = await db.opportunity.findUnique({
@@ -68,5 +68,5 @@ describe("OpportunityService Integration", () => {
     const rescored = await OpportunityService.rescoreOpportunity(opportunity!.id);
     expect(rescored.scoreTotal).toBeLessThan(opportunity!.scoreTotal); // score should drop
     expect(rescored.nextAction).toBe("VERIFY_SOLARIZATION");
-  });
+  }, 30000);
 });

@@ -75,7 +75,22 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
   const { id } = use(params);
 
   // Local tabs
-  const [activeTab, setActiveTab] = useState<"intel" | "finance" | "3d" | "notes">("intel");
+  const [activeTab, setActiveTab] = useState<"intel" | "occupancy" | "finance" | "3d" | "notes">("intel");
+
+  // Enrichment Form
+  const [enrichCompanyName, setEnrichCompanyName] = useState("");
+  const [enrichRelationship, setEnrichRelationship] = useState("occupant");
+  const [enrichContactName, setEnrichContactName] = useState("");
+  const [enrichContactRole, setEnrichContactRole] = useState("");
+  const [enrichContactEmail, setEnrichContactEmail] = useState("");
+  const [enrichContactPhone, setEnrichContactPhone] = useState("");
+  const [isSubmittingEnrichment, setIsSubmittingEnrichment] = useState(false);
+
+  // Outreach Form
+  const [outreachType, setOutreachType] = useState("call");
+  const [outreachStatus, setOutreachStatus] = useState("completed");
+  const [outreachNotes, setOutreachNotes] = useState("");
+  const [isLoggingOutreach, setIsLoggingOutreach] = useState(false);
 
   // Local mutation states
   const [assessmentLoading, setAssessmentLoading] = useState(false);
@@ -107,6 +122,11 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
   const addEvidenceMutation = api.opportunity.addSolarizationEvidence.useMutation();
   const updateStatusMutation = api.opportunity.updateStatus.useMutation();
   const addNoteMutation = api.opportunity.addNote.useMutation();
+
+  const requestVerificationMutation = api.opportunity.requestVerification.useMutation();
+  const completeVerificationMutation = api.opportunity.completeVerification.useMutation();
+  const addManualEnrichmentMutation = api.opportunity.addManualEnrichment.useMutation();
+  const addOutreachActivityMutation = api.opportunity.addOutreachActivity.useMutation();
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -226,6 +246,83 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
       showToast(`Lead priority updated to: ${newPriority}`, "success");
     } catch {
       showToast("Failed to update lead priority.", "error");
+    }
+  };
+
+  const handleRequestVerification = async () => {
+    try {
+      await requestVerificationMutation.mutateAsync({
+        opportunityId: id,
+        providerId: "manual_imagery_audit",
+      });
+      await refetch();
+      showToast("Verification audit task queued successfully.", "success");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to queue verification.", "error");
+    }
+  };
+
+  const handleCompleteVerification = async (taskId: string, hasSolar: boolean) => {
+    try {
+      await completeVerificationMutation.mutateAsync({
+        taskId,
+        hasSolar,
+        confidence: 0.95,
+        notes: `Audited via satellite review. Result: ${hasSolar ? "Solarized" : "Unsolarized"}.`,
+      });
+      await refetch();
+      showToast("Verification audit completed. Opportunity rescored.", "success");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to complete audit.", "error");
+    }
+  };
+
+  const handleAddEnrichment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!enrichCompanyName.trim()) return;
+    setIsSubmittingEnrichment(true);
+    try {
+      await addManualEnrichmentMutation.mutateAsync({
+        opportunityId: id,
+        companyName: enrichCompanyName,
+        relationship: enrichRelationship,
+        name: enrichContactName || undefined,
+        role: enrichContactRole || undefined,
+        email: enrichContactEmail || undefined,
+        phone: enrichContactPhone || undefined,
+      });
+      setEnrichCompanyName("");
+      setEnrichContactName("");
+      setEnrichContactRole("");
+      setEnrichContactEmail("");
+      setEnrichContactPhone("");
+      await refetch();
+      showToast("Occupancy and contact details successfully saved.", "success");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to add occupant details.", "error");
+    } finally {
+      setIsSubmittingEnrichment(false);
+    }
+  };
+
+  const handleLogOutreach = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!outreachNotes.trim()) return;
+    setIsLoggingOutreach(true);
+    try {
+      await addOutreachActivityMutation.mutateAsync({
+        opportunityId: id,
+        type: outreachType,
+        status: outreachStatus,
+        notes: outreachNotes,
+      });
+      setOutreachNotes("");
+      await refetch();
+      showToast("Outreach activity logged successfully.", "success");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to log outreach activity.", "error");
+    } finally {
+      setIsLoggingOutreach(false);
     }
   };
 
@@ -353,6 +450,11 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
             <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${getBandBadgeClass(opportunity.scoreBand)}`}>
               BAND {opportunity.scoreBand}
             </span>
+            {opportunity.rankSnapshots && opportunity.rankSnapshots[0] && (
+              <span className="inline-flex items-center rounded-full bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20 px-2.5 py-0.5 text-xs font-bold">
+                Rank #{opportunity.rankSnapshots[0].rankGlobal}
+              </span>
+            )}
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span>Score: <strong className="text-foreground">{opportunity.scoreTotal}</strong></span>
@@ -399,7 +501,7 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
         <div className="space-y-6 lg:col-span-3">
           {/* Tabs Navigation */}
           <div className="flex border-b border-border/40">
-            {(["intel", "finance", "3d", "notes"] as const).map((tab) => (
+            {(["intel", "occupancy", "finance", "3d", "notes"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -409,7 +511,7 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {tab === "intel" ? "Opportunity Intelligence" : tab === "finance" ? "Financials" : tab === "3d" ? "3D Visualization" : "Notes"}
+                {tab === "intel" ? "Opportunity Intelligence" : tab === "occupancy" ? "Occupancy & Contacts" : tab === "finance" ? "Financials" : tab === "3d" ? "3D Visualization" : "Activity & Notes"}
               </button>
             ))}
           </div>
@@ -587,6 +689,60 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
                   </div>
                 </Card>
 
+                {/* Rank V2 Drivers & Blockers */}
+                {opportunity.rankSnapshots && opportunity.rankSnapshots[0] && (
+                  <Card className="p-5 border-border/40 bg-gradient-to-r from-teal-500/[0.02] to-rose-500/[0.02]">
+                    <h3 className="text-sm font-bold tracking-tight text-foreground/90 mb-4 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-teal-500" />
+                      Prioritized Rank V2 Insights (Global Rank #{opportunity.rankSnapshots[0].rankGlobal})
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Positive Score Drivers</h4>
+                        <div className="space-y-2">
+                          {(() => {
+                            const latest = opportunity.rankSnapshots[0];
+                            const drivers = latest.driversJson
+                              ? (typeof latest.driversJson === "string" ? JSON.parse(latest.driversJson) : latest.driversJson)
+                              : [];
+                            return Array.isArray(drivers) && drivers.length > 0 ? (
+                              drivers.map((drv: string, idx: number) => (
+                                <div key={idx} className="flex gap-2 text-xs leading-relaxed text-foreground/80 bg-emerald-500/5 p-2 rounded-lg border border-emerald-500/10">
+                                  <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                                  <span>{drv}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">No positive rank drivers identified.</span>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-rose-500">Risk Blockers & Penalties</h4>
+                        <div className="space-y-2">
+                          {(() => {
+                            const latest = opportunity.rankSnapshots[0];
+                            const blockers = latest.blockersJson
+                              ? (typeof latest.blockersJson === "string" ? JSON.parse(latest.blockersJson) : latest.blockersJson)
+                              : [];
+                            return Array.isArray(blockers) && blockers.length > 0 ? (
+                              blockers.map((blk: string, idx: number) => (
+                                <div key={idx} className="flex gap-2 text-xs leading-relaxed text-foreground/80 bg-rose-500/5 p-2 rounded-lg border border-rose-500/10">
+                                  <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
+                                  <span>{blk}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">No risk blockers or scoring penalties found.</span>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+
                 {/* Solarization Evidence Timeline and Submission */}
                 <div className="grid gap-6 md:grid-cols-3">
                   {/* Submission Form */}
@@ -640,7 +796,7 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
                           value={evidenceNotes}
                           onChange={(e) => setEvidenceNotes(e.target.value)}
                           placeholder="Satellite view shows clear roof..."
-                          className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2.5 py-1.5 text-xs outline-none focus:border-teal-500"
+                          className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2.5 py-1.5 text-xs outline-none focus:border-teal-500 text-foreground font-sans"
                         />
                       </div>
 
@@ -656,7 +812,7 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
                   </Card>
 
                   {/* Evidence Timeline */}
-                  <Card className="p-4 border-border/40 md:col-span-2">
+                  <Card className="p-4 border-border/40 md:col-span-1">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Auditable Evidence Timeline</h3>
                     <div className="mt-4 space-y-3 max-h-[340px] overflow-y-auto pr-1">
                       {evidenceTimeline.length > 0 ? (
@@ -684,6 +840,233 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
                         </div>
                       )}
                     </div>
+                  </Card>
+
+                  {/* Verification Tasks & Audits Queue */}
+                  <Card className="p-4 border-border/40 md:col-span-1">
+                    <div className="flex items-center justify-between border-b border-border/20 pb-2.5 mb-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Verification Task Queue</h3>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={handleRequestVerification}
+                        className="h-7 text-[10px]"
+                        disabled={requestVerificationMutation.isPending}
+                      >
+                        {requestVerificationMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <PlusCircle className="h-3 w-3" />}
+                        Request Audit
+                      </Button>
+                    </div>
+                    <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
+                      {opportunity.verificationTasks && opportunity.verificationTasks.length > 0 ? (
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        opportunity.verificationTasks.map((task: any) => {
+                          const result = task.resultJson ? (typeof task.resultJson === "string" ? JSON.parse(task.resultJson) : task.resultJson) : null;
+                          return (
+                            <div key={task.id} className="rounded-lg border border-border/20 bg-muted/10 p-2.5 text-xs">
+                              <div className="flex items-center justify-between font-medium">
+                                <span>Provider: <strong className="font-semibold text-foreground/80">{task.providerId}</strong></span>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  task.status === "completed" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-500/10 text-amber-600 dark:text-amber-400 animate-pulse"
+                                }`}>
+                                  {task.status}
+                                </span>
+                              </div>
+                              <div className="mt-1 text-muted-foreground text-[10px] flex justify-between">
+                                <span>Created: {new Date(task.createdAt).toLocaleDateString()}</span>
+                                {task.completedAt && <span>Completed: {new Date(task.completedAt).toLocaleDateString()}</span>}
+                              </div>
+                              {task.status === "pending" && (
+                                <div className="mt-2.5 pt-2 border-t border-border/10 flex gap-2">
+                                  <Button
+                                    size="xs"
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-[10px] flex-1"
+                                    onClick={() => handleCompleteVerification(task.id, false)}
+                                  >
+                                    Confirm Unsolarized
+                                  </Button>
+                                  <Button
+                                    size="xs"
+                                    variant="destructive"
+                                    className="h-7 text-[10px] flex-1"
+                                    onClick={() => handleCompleteVerification(task.id, true)}
+                                  >
+                                    Mark Solarized
+                                  </Button>
+                                </div>
+                              )}
+                              {result && (
+                                <div className="mt-2 bg-muted/40 p-2 rounded text-[11px] text-foreground/80">
+                                  <div>Result: <strong>{result.hasSolar ? "Solar Present" : "Solar Absent"}</strong> (Conf: {(result.confidence * 100).toFixed(0)}%)</div>
+                                  {result.notes && <div className="text-muted-foreground italic mt-0.5">Notes: {result.notes}</div>}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="text-center py-6 text-xs text-muted-foreground italic">
+                          No verification tasks queued.
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "occupancy" && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="grid gap-6 md:grid-cols-3">
+                  {/* Left 2 Cols: Directory */}
+                  <div className="md:col-span-2 space-y-6">
+                    <Card className="p-5 border-border/40">
+                      <h3 className="text-sm font-bold tracking-tight mb-4 text-foreground/90 flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-teal-500" />
+                        Occupant Companies & Entities
+                      </h3>
+                      <div className="space-y-3">
+                        {opportunity.companySignals && opportunity.companySignals.length > 0 ? (
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          opportunity.companySignals.map((sig: any) => (
+                            <div key={sig.id} className="p-3.5 rounded-xl border border-border/20 bg-muted/10 flex items-start justify-between">
+                              <div>
+                                <div className="font-semibold text-sm text-foreground/90">{sig.companyName}</div>
+                                <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-2 gap-y-1">
+                                  <span>Relationship: <strong className="text-foreground/80 capitalize">{sig.relationship}</strong></span>
+                                  <span>&middot;</span>
+                                  <span>Source: <strong className="text-foreground/80 capitalize">{sig.source}</strong></span>
+                                  <span>&middot;</span>
+                                  <span>Confidence: <strong className="text-foreground/80">{(sig.confidence * 100).toFixed(0)}%</strong></span>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-xs text-muted-foreground italic border border-dashed rounded-xl">
+                            No occupancy details recorded yet. Use the form to enrich.
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+
+                    <Card className="p-5 border-border/40">
+                      <h3 className="text-sm font-bold tracking-tight mb-4 text-foreground/90 flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4 text-teal-500" />
+                        Contact Directory
+                      </h3>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {opportunity.contactSignals && opportunity.contactSignals.length > 0 ? (
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          opportunity.contactSignals.map((contact: any) => (
+                            <div key={contact.id} className="p-3.5 rounded-xl border border-border/20 bg-muted/5 space-y-2">
+                              <div>
+                                <div className="font-semibold text-xs text-foreground/90">{contact.name || "Unnamed Contact"}</div>
+                                {contact.role && <div className="text-[10px] text-teal-600 dark:text-teal-400 font-medium">{contact.role}</div>}
+                              </div>
+                              <div className="space-y-1 text-[11px] text-muted-foreground">
+                                {contact.email && <div className="truncate">Email: <span className="text-foreground/80 font-mono">{contact.email}</span></div>}
+                                {contact.phone && <div>Phone: <span className="text-foreground/80 font-mono">{contact.phone}</span></div>}
+                                <div className="pt-1.5 border-t border-border/10 flex justify-between text-[9px]">
+                                  <span>Source: <strong className="capitalize">{contact.source}</strong></span>
+                                  <span>Policy: <strong className="capitalize">{contact.sourcePolicy}</strong></span>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="col-span-2 text-center py-8 text-xs text-muted-foreground italic border border-dashed rounded-xl">
+                            No direct contacts enriched yet.
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  </div>
+
+                  {/* Right Col: Add Manual Enrichment Form */}
+                  <Card className="p-5 border-border/40 md:col-span-1 h-fit">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Add Contact Enrichment</h3>
+                    <form onSubmit={handleAddEnrichment} className="mt-4 space-y-3.5">
+                      <div>
+                        <label className="text-[11px] font-semibold text-muted-foreground">Company Name *</label>
+                        <input
+                          type="text"
+                          required
+                          value={enrichCompanyName}
+                          onChange={(e) => setEnrichCompanyName(e.target.value)}
+                          placeholder="e.g. Al Futtaim Logistics"
+                          className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2.5 py-1.5 text-xs outline-none focus:border-teal-500 text-foreground"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-semibold text-muted-foreground">Relationship</label>
+                        <select
+                          value={enrichRelationship}
+                          onChange={(e) => setEnrichRelationship(e.target.value)}
+                          className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2.5 py-1.5 text-xs outline-none focus:border-teal-500 text-foreground"
+                        >
+                          <option value="occupant">Occupant / Tenant</option>
+                          <option value="owner">Property Owner</option>
+                          <option value="operator">Facility Operator</option>
+                        </select>
+                      </div>
+
+                      <div className="my-2 border-t border-border/10" />
+
+                      <div>
+                        <label className="text-[11px] font-semibold text-muted-foreground">Contact Name</label>
+                        <input
+                          type="text"
+                          value={enrichContactName}
+                          onChange={(e) => setEnrichContactName(e.target.value)}
+                          placeholder="e.g. John Doe"
+                          className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2.5 py-1.5 text-xs outline-none focus:border-teal-500 text-foreground"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-semibold text-muted-foreground">Role / Designation</label>
+                        <input
+                          type="text"
+                          value={enrichContactRole}
+                          onChange={(e) => setEnrichContactRole(e.target.value)}
+                          placeholder="e.g. Facility Manager"
+                          className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2.5 py-1.5 text-xs outline-none focus:border-teal-500 text-foreground"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-semibold text-muted-foreground">Email Address</label>
+                        <input
+                          type="email"
+                          value={enrichContactEmail}
+                          onChange={(e) => setEnrichContactEmail(e.target.value)}
+                          placeholder="manager@company.ae"
+                          className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2.5 py-1.5 text-xs outline-none focus:border-teal-500 text-foreground"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-semibold text-muted-foreground">Phone Number</label>
+                        <input
+                          type="tel"
+                          value={enrichContactPhone}
+                          onChange={(e) => setEnrichContactPhone(e.target.value)}
+                          placeholder="+971 50 123 4567"
+                          className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2.5 py-1.5 text-xs outline-none focus:border-teal-500 text-foreground"
+                        />
+                      </div>
+
+                      <Button
+                        type="submit"
+                        disabled={isSubmittingEnrichment}
+                        className="w-full h-8 gap-1 text-xs font-semibold"
+                      >
+                        {isSubmittingEnrichment ? <Loader2 className="h-3 w-3 animate-spin" /> : <PlusCircle className="h-3.5 w-3.5" />}
+                        Save Occupant Details
+                      </Button>
+                    </form>
                   </Card>
                 </div>
               </div>
@@ -825,46 +1208,157 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
 
             {activeTab === "notes" && (
               <div className="space-y-6 animate-fadeIn">
-                {/* Notes Input form */}
-                <Card className="p-4 border-border/40">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Create Internal Note</h3>
-                  <form onSubmit={handleAddNote} className="mt-3 space-y-2">
-                    <textarea
-                      rows={3}
-                      value={noteBody}
-                      onChange={(e) => setNoteBody(e.target.value)}
-                      placeholder="Enter details on outreach status, customer objections, or engineering notes..."
-                      className="w-full rounded-md border border-border/60 bg-background/50 px-2.5 py-1.5 text-xs outline-none focus:border-teal-500"
-                    />
-                    <Button
-                      type="submit"
-                      disabled={isAddingNote || !noteBody.trim()}
-                      className="h-8 gap-1 text-xs font-semibold ml-auto flex"
-                    >
-                      {isAddingNote ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3.5 w-3.5" />}
-                      Add Note
-                    </Button>
-                  </form>
-                </Card>
+                <div className="grid gap-6 md:grid-cols-2">
+                  {/* Notes Input form */}
+                  <Card className="p-4 border-border/40">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Create Internal Note</h3>
+                    <form onSubmit={handleAddNote} className="mt-3 space-y-2">
+                      <textarea
+                        rows={3}
+                        value={noteBody}
+                        onChange={(e) => setNoteBody(e.target.value)}
+                        placeholder="Enter details on outreach status, customer objections, or engineering notes..."
+                        className="w-full rounded-md border border-border/60 bg-background/50 px-2.5 py-1.5 text-xs outline-none focus:border-teal-500 text-foreground"
+                      />
+                      <Button
+                        type="submit"
+                        disabled={isAddingNote || !noteBody.trim()}
+                        className="h-8 gap-1 text-xs font-semibold ml-auto flex"
+                      >
+                        {isAddingNote ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3.5 w-3.5" />}
+                        Add Note
+                      </Button>
+                    </form>
+                  </Card>
 
-                  {/* Notes list */}
-                <div className="space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Activity Log & Notes</h3>
-                  {noteTimeline.length > 0 ? (
-                    noteTimeline.map((note) => (
-                      <Card key={note.id} className="p-3 border-border/40 text-xs leading-relaxed">
-                        <div className="flex items-center justify-between border-b border-border/10 pb-1.5 mb-1.5 text-muted-foreground">
-                          <span className="font-semibold text-foreground/80">{note.createdBy || "system"}</span>
-                          <span>{new Date(note.createdAt).toLocaleString()}</span>
+                  {/* Outreach activity log form */}
+                  <Card className="p-4 border-border/40">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Log Outreach Activity</h3>
+                    <form onSubmit={handleLogOutreach} className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-[10px] font-semibold text-muted-foreground">Activity Type</label>
+                        <select
+                          value={outreachType}
+                          onChange={(e) => setOutreachType(e.target.value)}
+                          className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2.5 py-1 text-xs outline-none focus:border-teal-500 text-foreground"
+                        >
+                          <option value="call">Call</option>
+                          <option value="email">Email</option>
+                          <option value="meeting">Meeting</option>
+                          <option value="proposal">Proposal Presentation</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-semibold text-muted-foreground">Status</label>
+                        <select
+                          value={outreachStatus}
+                          onChange={(e) => setOutreachStatus(e.target.value)}
+                          className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2.5 py-1 text-xs outline-none focus:border-teal-500 text-foreground"
+                        >
+                          <option value="completed">Completed</option>
+                          <option value="planned">Planned</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="text-[10px] font-semibold text-muted-foreground">Outreach Notes / Outcome</label>
+                        <textarea
+                          rows={2}
+                          value={outreachNotes}
+                          onChange={(e) => setOutreachNotes(e.target.value)}
+                          placeholder="Discussed grid net-metering concerns, client was highly interested..."
+                          className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2.5 py-1 text-xs outline-none focus:border-teal-500 text-foreground"
+                        />
+                      </div>
+                      <div className="sm:col-span-2 flex justify-end">
+                        <Button
+                          type="submit"
+                          disabled={isLoggingOutreach || !outreachNotes.trim()}
+                          className="h-8 gap-1 text-xs font-semibold"
+                        >
+                          {isLoggingOutreach ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                          Log Activity
+                        </Button>
+                      </div>
+                    </form>
+                  </Card>
+                </div>
+
+                {/* Combined activity timeline */}
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Unified Activity Timeline</h3>
+                  <div className="space-y-4 relative before:absolute before:left-3.5 before:top-2 before:bottom-2 before:w-[2px] before:bg-border/40">
+                    {(() => {
+                      const noteTimelineLocal = noteTimeline.map(n => ({
+                        id: n.id,
+                        type: "note",
+                        title: "Internal Note added",
+                        body: n.body,
+                        actor: n.createdBy || "system",
+                        date: new Date(n.createdAt),
+                      }));
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      const outreachTimeline = (opportunity.outreachActivities ?? []).map((o: any) => ({
+                        id: o.id,
+                        type: "outreach",
+                        title: `Outreach Activity: ${o.type} (${o.status})`,
+                        body: o.notes,
+                        actor: o.actor || "system",
+                        date: new Date(o.createdAt),
+                      }));
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      const verificationTimeline = (opportunity.verificationTasks ?? []).map((v: any) => ({
+                        id: v.id,
+                        type: "verification",
+                        title: `Verification Task: ${v.providerId} (${v.status})`,
+                        body: v.resultJson
+                          ? (typeof v.resultJson === "string" ? JSON.parse(v.resultJson) : v.resultJson).notes
+                          : `Task created with priority ${v.priority}`,
+                        actor: "system",
+                        date: new Date(v.createdAt),
+                      }));
+                      const activities = [...noteTimelineLocal, ...outreachTimeline, ...verificationTimeline].sort((a, b) => b.date.getTime() - a.date.getTime());
+
+                      return activities.length > 0 ? (
+                        activities.map((act) => (
+                          <div key={act.id} className="relative pl-8 flex gap-3 text-xs leading-relaxed">
+                            {/* Timeline Dot/Icon */}
+                            <div className={`absolute left-0 top-0.5 h-7 w-7 rounded-full border flex items-center justify-center shadow-sm ${
+                              act.type === "note"
+                                ? "bg-teal-500/10 border-teal-500/20 text-teal-600 dark:text-teal-400"
+                                : act.type === "outreach"
+                                ? "bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400"
+                                : "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400"
+                            }`}>
+                              {act.type === "note" ? (
+                                <MessageSquare className="h-3.5 w-3.5" />
+                              ) : act.type === "outreach" ? (
+                                <Zap className="h-3.5 w-3.5" />
+                              ) : (
+                                <Check className="h-3.5 w-3.5" />
+                              )}
+                            </div>
+
+                            <Card className="flex-1 p-3.5 border-border/40 hover:border-border/80 transition-all bg-card/50">
+                              <div className="flex items-center justify-between border-b border-border/10 pb-1.5 mb-1.5 text-muted-foreground">
+                                <div className="font-semibold text-foreground/95">{act.title}</div>
+                                <div className="text-[10px] tabular-nums">{act.date.toLocaleString()}</div>
+                              </div>
+                              <div className="flex justify-between items-center text-[10px] text-muted-foreground mb-1.5">
+                                <span>Logged by: <strong className="text-foreground/80">{act.actor}</strong></span>
+                              </div>
+                              {act.body && <p className="text-foreground/80 whitespace-pre-wrap leading-relaxed">{act.body}</p>}
+                            </Card>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-10 text-xs text-muted-foreground border border-dashed rounded-lg bg-card">
+                          No activity notes or outreach actions recorded.
                         </div>
-                        <p className="text-foreground/90 whitespace-pre-wrap">{note.body}</p>
-                      </Card>
-                    ))
-                  ) : (
-                    <div className="text-center py-10 text-xs text-muted-foreground border border-dashed rounded-lg">
-                      No notes recorded.
-                    </div>
-                  )}
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             )}
@@ -882,11 +1376,14 @@ export default function OpportunityDossierPage({ params }: { params: Promise<{ i
               <select
                 value={opportunity.status}
                 onChange={(e) => handleStatusChange(e.target.value)}
-                className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2 py-1.5 text-xs outline-none focus:border-teal-500 capitalize"
+                className="mt-1 w-full rounded-md border border-border/60 bg-background/50 px-2 py-1.5 text-xs outline-none focus:border-teal-500 capitalize text-foreground"
               >
                 <option value="new">New Opportunity</option>
-                <option value="reviewed">Reviewed</option>
+                <option value="needs_verification">Needs Verification</option>
+                <option value="qualified">Qualified</option>
                 <option value="contacted">Contacted</option>
+                <option value="won">Won</option>
+                <option value="lost">Lost</option>
                 <option value="rejected">Rejected</option>
               </select>
             </div>

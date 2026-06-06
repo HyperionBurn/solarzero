@@ -45,11 +45,17 @@ model Opportunity {
   lastScoredAt          DateTime?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+  assignedTo            String?
 
   scores                OpportunityScore[]
   evidence              SolarizationEvidence[]
   notes                 OpportunityNote[]
   discoveryCandidates DiscoveryCandidate[]
+  rankSnapshots        OpportunityRankSnapshot[]
+  verificationTasks    VerificationTask[]
+  companySignals       CompanySignal[]
+  contactSignals       ContactSignal[]
+  outreachActivities   OutreachActivity[]
 
   @@index([scoreBand, scoreTotal])
   @@index([status])
@@ -282,6 +288,7 @@ model ScanCampaign {
   completedAt     DateTime?
   tiles           ScanTile[]
   candidates      DiscoveryCandidate[]
+  rankSnapshots   OpportunityRankSnapshot[]
 }
 
 model ScanTile {
@@ -330,4 +337,88 @@ model DiscoveryCandidate {
   @@index([opportunityId])
   @@index([sourceId, sourceKey])
   @@unique([sourceId, sourceKey]) // Deduplication constraint
+}
+
+model OpportunityRankSnapshot {
+  id              String   @id @default(cuid())
+  opportunityId   String
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  campaignId      String?
+  campaign        ScanCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  scoringVersion  String
+  scoreTotal      Float
+  rankGlobal      Int?
+  rankCampaign    Int?
+  driversJson     Json?
+  blockersJson    Json?
+  createdAt       DateTime @default(now())
+
+  @@index([opportunityId])
+  @@index([campaignId])
+}
+
+model VerificationTask {
+  id              String   @id @default(cuid())
+  opportunityId   String
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  providerId      String
+  status          String   @default("pending") // pending, completed, failed
+  priority        Int      @default(50)
+  resultJson      Json?
+  error           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  completedAt     DateTime?
+
+  @@index([opportunityId])
+  @@index([status])
+}
+
+model CompanySignal {
+  id              String   @id @default(cuid())
+  opportunityId   String
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  companyName     String
+  relationship    String?  // e.g. "tenant", "owner", "occupant"
+  source          String   // e.g. "manual", "imported_csv", "google_places"
+  sourceUrl       String?
+  confidence      Float    @default(0.5)
+  payloadJson     Json?
+  observedAt      DateTime?
+  createdAt       DateTime @default(now())
+  contacts        ContactSignal[]
+
+  @@index([opportunityId])
+}
+
+model ContactSignal {
+  id              String   @id @default(cuid())
+  opportunityId   String
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  companySignalId String?
+  companySignal   CompanySignal? @relation(fields: [companySignalId], references: [id], onDelete: SetNull)
+  name            String?
+  role            String?
+  email           String?
+  phone           String?
+  source          String
+  sourcePolicy    String?
+  confidence      Float    @default(0.5)
+  createdAt       DateTime @default(now())
+
+  @@index([opportunityId])
+  @@index([companySignalId])
+}
+
+model OutreachActivity {
+  id              String   @id @default(cuid())
+  opportunityId   String
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  type            String   // email, call, meeting, proposal, other
+  status          String   // planned, completed, cancelled
+  notes           String?  @db.Text
+  actor           String?  // user email or "system"
+  createdAt       DateTime @default(now())
+
+  @@index([opportunityId])
 }
