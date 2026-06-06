@@ -15,11 +15,25 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: solarzero_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d solarzero_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     defaults:
       run:
         working-directory: .
     env:
-      DATABASE_URL: "postgresql://user:password@localhost:5432/solarzero_test"
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/solarzero_test"
       NEXTAUTH_SECRET: "test-secret-for-ci"
       NEXTAUTH_URL: "http://localhost:3000"
     steps:
@@ -34,6 +48,9 @@ jobs:
 
       - name: Generate Prisma client
         run: npx prisma generate
+
+      - name: Apply Prisma migrations
+        run: npx prisma migrate deploy
 
       - name: Cache Next.js build
         uses: actions/cache@v4
